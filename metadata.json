@@ -1,0 +1,6 @@
+{
+  "name": "Transmittal Pro - Equipment & Document Management",
+  "description": "Production-grade Equipment & Document Transmittal Form Management System with printable receipts, 4-tier signatory workflows, and hard copy archiving.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
