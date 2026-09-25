@@ -1,7 +1,17 @@
 import React, { useState } from 'react';
 import { TransmittalForm, TransmittalSettings, PrintMode } from '../types/transmittal';
 import { TransmittalDocument } from './TransmittalDocument';
-import { Printer, X, Scissors, FileText, ZoomIn, ZoomOut, ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+  Printer,
+  X,
+  Scissors,
+  FileText,
+  ZoomIn,
+  ZoomOut,
+  Layers,
+  MapPin,
+  Calendar
+} from 'lucide-react';
 
 interface Props {
   form?: TransmittalForm | null;
@@ -25,7 +35,6 @@ export const TransmittalPrintModal: React.FC<Props> = ({
   const formsList: TransmittalForm[] =
     forms && forms.length > 0 ? forms : form ? [form] : [];
 
-  const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [localPrintMode, setLocalPrintMode] = useState<PrintMode>('dual-copy');
   const printMode = controlledPrintMode || localPrintMode;
   const setPrintMode = (mode: PrintMode) => {
@@ -36,69 +45,64 @@ export const TransmittalPrintModal: React.FC<Props> = ({
 
   if (!isOpen || formsList.length === 0) return null;
 
-  const activeForm = formsList[Math.min(currentIndex, formsList.length - 1)] || formsList[0];
   const isBulk = formsList.length > 1;
 
   const handlePrint = () => {
     window.print();
   };
 
+  const scrollToSheet = (index: number) => {
+    const el = document.getElementById(`preview-sheet-${index}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-slate-900/80 backdrop-blur-sm overflow-hidden no-print">
-      {/* Top action toolbar */}
+    <div className="fixed inset-0 z-50 flex flex-col bg-slate-900/85 backdrop-blur-sm overflow-hidden no-print">
+      {/* Top Action Toolbar */}
       <div className="bg-slate-900 text-white px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3 border-b border-slate-700 shadow-md shrink-0">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-red-600 rounded-lg text-white font-bold flex items-center justify-center">
-            <FileText className="w-5 h-5" />
+            {isBulk ? <Layers className="w-5 h-5" /> : <FileText className="w-5 h-5" />}
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
               <h2 className="text-base font-bold tracking-tight">
                 {isBulk ? 'Bulk Print Preview' : 'Print Slip'}
               </h2>
-              <span className="bg-slate-800 text-red-400 font-mono px-2 py-0.5 rounded text-xs border border-slate-700 font-bold">
-                {activeForm.formNumber}
-              </span>
-              {isBulk && (
-                <span className="bg-red-500/20 text-red-300 font-bold px-2 py-0.5 rounded text-xs border border-red-500/30">
-                  {formsList.length} Slips Selected
+              {isBulk ? (
+                <span className="bg-red-500/20 text-red-300 font-bold px-2.5 py-0.5 rounded text-xs border border-red-500/30 flex items-center gap-1.5">
+                  <span>{formsList.length} Continuous Sheets</span>
+                </span>
+              ) : (
+                <span className="bg-slate-800 text-red-400 font-mono px-2 py-0.5 rounded text-xs border border-slate-700 font-bold">
+                  {formsList[0].formNumber}
                 </span>
               )}
-              <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
-                8.5" × 13" Long Bond / Folio
-              </span>
             </div>
           </div>
         </div>
 
-        {/* Layout toggle & Actions */}
+        {/* Layout Toggle, Zoom & Actions */}
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
-          {/* Multiple slip pager (for bulk) */}
+          {/* Quick jump to sheet for bulk */}
           {isBulk && (
-            <div className="flex items-center bg-slate-800 rounded-lg border border-slate-700 px-1 py-0.5 text-xs">
-              <button
-                type="button"
-                onClick={() => setCurrentIndex((prev) => Math.max(0, prev - 1))}
-                disabled={currentIndex === 0}
-                className="p-1 text-slate-300 hover:text-white disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
-                title="Previous slip"
-              >
-                <ChevronLeft className="w-4 h-4" />
-              </button>
-              <span className="px-2 text-slate-200 font-medium">
-                {currentIndex + 1} of {formsList.length}
-              </span>
-              <button
-                type="button"
-                onClick={() =>
-                  setCurrentIndex((prev) => Math.min(formsList.length - 1, prev + 1))
-                }
-                disabled={currentIndex === formsList.length - 1}
-                className="p-1 text-slate-300 hover:text-white disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
-                title="Next slip"
-              >
-                <ChevronRight className="w-4 h-4" />
-              </button>
+            <div className="hidden xl:flex items-center bg-slate-800 rounded-lg border border-slate-700 px-2 py-1 text-xs gap-1.5">
+              <span className="text-slate-400 font-medium">Jump to:</span>
+              <div className="flex items-center gap-1 max-w-[280px] overflow-x-auto no-scrollbar py-0.5">
+                {formsList.map((f, idx) => (
+                  <button
+                    key={f.id}
+                    type="button"
+                    onClick={() => scrollToSheet(idx)}
+                    className="px-2 py-0.5 bg-slate-700 hover:bg-slate-600 text-slate-200 hover:text-white rounded text-[11px] font-mono font-medium transition-colors cursor-pointer shrink-0"
+                    title={`Go to ${f.formNumber}: ${f.purpose}`}
+                  >
+                    #{idx + 1}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
 
@@ -108,7 +112,7 @@ export const TransmittalPrintModal: React.FC<Props> = ({
               onClick={() => setPrintMode('dual-copy')}
               className={`px-3 py-1.5 rounded-md font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
                 printMode === 'dual-copy'
-                  ? 'bg-red-600 text-white shadow-sm'
+                  ? 'bg-red-600 text-white shadow-sm font-semibold'
                   : 'text-slate-300 hover:text-white'
               }`}
             >
@@ -119,7 +123,7 @@ export const TransmittalPrintModal: React.FC<Props> = ({
               onClick={() => setPrintMode('full-page')}
               className={`px-3 py-1.5 rounded-md font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
                 printMode === 'full-page'
-                  ? 'bg-red-600 text-white shadow-sm'
+                  ? 'bg-red-600 text-white shadow-sm font-semibold'
                   : 'text-slate-300 hover:text-white'
               }`}
             >
@@ -131,7 +135,7 @@ export const TransmittalPrintModal: React.FC<Props> = ({
           {/* Zoom controls */}
           <div className="hidden lg:flex items-center bg-slate-800 rounded-lg border border-slate-700 text-xs text-slate-300 px-2 py-1 gap-2">
             <button
-              onClick={() => setZoom((z) => Math.max(50, z - 15))}
+              onClick={() => setZoom((z) => Math.max(40, z - 10))}
               className="p-1 hover:text-white cursor-pointer"
               title="Zoom out"
             >
@@ -139,7 +143,7 @@ export const TransmittalPrintModal: React.FC<Props> = ({
             </button>
             <span className="font-mono w-10 text-center">{zoom}%</span>
             <button
-              onClick={() => setZoom((z) => Math.min(150, z + 15))}
+              onClick={() => setZoom((z) => Math.min(150, z + 10))}
               className="p-1 hover:text-white cursor-pointer"
               title="Zoom in"
             >
@@ -166,71 +170,94 @@ export const TransmittalPrintModal: React.FC<Props> = ({
         </div>
       </div>
 
-      {/* Sub-bar: Paper Specs Hint */}
-      <div className="bg-slate-800/90 text-slate-300 text-xs px-4 sm:px-6 py-1.5 flex items-center justify-between border-b border-slate-700/60 shrink-0">
-        <div className="flex items-center gap-2 text-[11.5px] truncate">
-          <span className="font-semibold text-white">Target Paper:</span>
-          <span>8.5" × 13" (Folio / Philippine Long Bond)</span>
-          <span className="text-slate-400">•</span>
-          <span className="text-slate-300 truncate">
-            {isBulk
-              ? `Bulk print: Each of the ${formsList.length} slips will be printed on a separate sheet.`
-              : printMode === 'dual-copy'
-              ? '2-in-1 layout: Head Office Copy (top) & Branch Copy (bottom)'
-              : 'Full page layout'}
-          </span>
-        </div>
-        <span className="text-amber-400 text-[11px] font-medium hidden md:inline shrink-0">
-          Tip: In Print Dialog, select Paper "Folio", "8.5 × 13", or "Legal" with Margins "Default"
-        </span>
-      </div>
-
-      {/* Preview Canvas Area */}
-      <div className="flex-1 overflow-auto p-4 sm:p-6 md:p-10 flex justify-center items-start bg-slate-950/60">
+      {/* Preview Canvas Area: Continuous vertical scroll for all slips */}
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 flex justify-center items-start bg-slate-950/70">
         <div
           style={{ transform: `scale(${zoom / 100})`, transformOrigin: 'top center' }}
-          className="transition-transform duration-150"
+          className="transition-transform duration-150 flex flex-col items-center space-y-10 pb-16"
         >
-          {printMode === 'full-page' ? (
-            /* Full Page View (8.5in x 13in proportion: 800px x 1224px) */
-            <div className="w-[800px] min-h-[1224px] bg-white shadow-2xl rounded-sm border border-slate-300 p-4 flex flex-col justify-between">
-              <TransmittalDocument
-                form={activeForm}
-                settings={settings}
-                watermarkType="head-office"
-                copyLabel="HEAD OFFICE COPY"
-                isCompact={false}
-              />
-            </div>
-          ) : (
-            /* 2-in-1 Dual Half-Sheet (8.5in x 13in paper proportion: 800px x 1224px) */
-            <div className="w-[800px] min-h-[1224px] bg-white shadow-2xl rounded-sm border border-slate-300 p-4 flex flex-col justify-between">
-              {/* Top Half: Head Office Copy */}
-              <div className="flex-1 pb-3 flex flex-col justify-center">
-                <TransmittalDocument
-                  form={activeForm}
-                  settings={settings}
-                  watermarkType="head-office"
-                  copyLabel="HEAD OFFICE COPY"
-                  isCompact={true}
-                />
-              </div>
+          {formsList.map((itemForm, index) => {
+            const formattedDate = new Date(itemForm.date).toLocaleDateString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric'
+            });
 
-              {/* Center Cut Line Divider */}
-              <div className="w-full my-2 border-t-2 border-dashed border-slate-400" />
+            return (
+              <div
+                key={itemForm.id}
+                id={`preview-sheet-${index}`}
+                className="flex flex-col items-center"
+              >
+                {/* Continuous Page Header Ribbon */}
+                <div className="w-[800px] bg-slate-800 text-slate-200 px-4 py-2 rounded-t-lg border-t border-x border-slate-700 flex items-center justify-between text-xs shadow-sm mb-0">
+                  <div className="flex items-center gap-2.5">
+                    <span className="bg-red-600 text-white font-bold px-2 py-0.5 rounded text-[11px]">
+                      Sheet {index + 1} of {formsList.length}
+                    </span>
+                    <span className="font-mono font-bold text-white text-sm">
+                      {itemForm.formNumber}
+                    </span>
+                    <span className="text-slate-400 text-[11px] flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />
+                      {formattedDate}
+                    </span>
+                    <span className="text-slate-400 text-[11px] flex items-center gap-1">
+                      <MapPin className="w-3 h-3 text-red-400" />
+                      {itemForm.dropTo || itemForm.receivedByName || 'Head Office'}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-slate-300 font-medium">
+                    {printMode === 'dual-copy' ? '2-in-1 Dual Half-Sheet' : 'Full Page Mode'}
+                  </div>
+                </div>
 
-              {/* Bottom Half: Branch Copy */}
-              <div className="flex-1 pt-3 flex flex-col justify-center">
-                <TransmittalDocument
-                  form={activeForm}
-                  settings={settings}
-                  watermarkType="branch"
-                  copyLabel="BRANCH COPY"
-                  isCompact={true}
-                />
+                {/* Sheet Body (8.5in x 13in proportion: 800px x 1224px) */}
+                {printMode === 'full-page' ? (
+                  <div className="w-[800px] min-h-[1224px] bg-white shadow-2xl rounded-b-lg border border-slate-300 p-4 flex flex-col justify-between">
+                    <TransmittalDocument
+                      form={itemForm}
+                      settings={settings}
+                      watermarkType="head-office"
+                      copyLabel="HEAD OFFICE COPY"
+                      isCompact={false}
+                    />
+                  </div>
+                ) : (
+                  <div className="w-[800px] min-h-[1224px] bg-white shadow-2xl rounded-b-lg border border-slate-300 p-4 flex flex-col justify-between">
+                    {/* Top Half: Head Office Copy */}
+                    <div className="flex-1 pb-3 flex flex-col justify-center">
+                      <TransmittalDocument
+                        form={itemForm}
+                        settings={settings}
+                        watermarkType="head-office"
+                        copyLabel="HEAD OFFICE COPY"
+                        isCompact={true}
+                      />
+                    </div>
+
+                    {/* Center Cut Line Divider */}
+                    <div className="w-full my-2 border-t-2 border-dashed border-slate-400 relative flex items-center justify-center">
+                      <span className="bg-white px-2 text-[10px] text-slate-400 uppercase font-mono font-semibold">
+                        ✂ Cut along line • Top: Head Office Copy / Bottom: Branch Copy
+                      </span>
+                    </div>
+
+                    {/* Bottom Half: Branch Copy */}
+                    <div className="flex-1 pt-3 flex flex-col justify-center">
+                      <TransmittalDocument
+                        form={itemForm}
+                        settings={settings}
+                        watermarkType="branch"
+                        copyLabel="BRANCH COPY"
+                        isCompact={true}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          )}
+            );
+          })}
         </div>
       </div>
     </div>

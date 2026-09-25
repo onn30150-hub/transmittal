@@ -372,15 +372,30 @@ export const SettingsModal: React.FC<Props> = ({
                 <h4 className="text-sm font-bold text-slate-800 flex items-center gap-2">
                   <Upload className="w-4 h-4 text-blue-600" /> Restore Backup
                 </h4>
-                <label className="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg text-xs font-semibold hover:bg-slate-800 cursor-pointer">
-                  <Upload className="w-3.5 h-3.5" /> Import JSON
-                  <input
-                    type="file"
-                    accept=".json"
-                    onChange={handleImportFile}
-                    className="hidden"
-                  />
-                </label>
+                <div className="flex flex-wrap items-center gap-3">
+                  <label className="inline-flex items-center gap-2 px-4 py-2 bg-slate-900 text-white rounded-lg text-xs font-semibold hover:bg-slate-800 cursor-pointer">
+                    <Upload className="w-3.5 h-3.5" /> Import JSON
+                    <input
+                      type="file"
+                      accept=".json"
+                      onChange={handleImportFile}
+                      className="hidden"
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (window.confirm('Restore initial sample transmittals? Existing records will be preserved.')) {
+                        await StorageService.resetToSampleData();
+                        await onRefreshData();
+                        setMsg({ text: 'Sample transmittals restored.', type: 'success' });
+                      }
+                    }}
+                    className="px-3.5 py-2 bg-white border border-slate-300 text-slate-700 hover:bg-slate-100 rounded-lg text-xs font-medium cursor-pointer"
+                  >
+                    Restore Demo Records
+                  </button>
+                </div>
               </div>
             </div>
           )}

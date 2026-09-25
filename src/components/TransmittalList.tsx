@@ -24,6 +24,7 @@ interface Props {
   onSelectAll: () => void;
   onClearSelection: () => void;
   onBulkPrint: () => void;
+  onBulkDelete?: () => void;
   onEdit: (form: TransmittalForm) => void;
   onPrint: (form: TransmittalForm) => void;
   onDuplicate: (form: TransmittalForm) => void;
@@ -41,6 +42,7 @@ export const TransmittalList: React.FC<Props> = ({
   onSelectAll,
   onClearSelection,
   onBulkPrint,
+  onBulkDelete,
   onEdit,
   onPrint,
   onDuplicate,
@@ -101,6 +103,17 @@ export const TransmittalList: React.FC<Props> = ({
             >
               Clear
             </button>
+            {onBulkDelete && (
+              <button
+                type="button"
+                onClick={onBulkDelete}
+                className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-950/60 hover:bg-rose-900 text-rose-300 hover:text-white rounded-lg text-xs font-semibold border border-rose-800/60 transition-all cursor-pointer"
+                title="Delete all selected records"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Delete ({selectedIds.length})</span>
+              </button>
+            )}
             <button
               type="button"
               onClick={onBulkPrint}

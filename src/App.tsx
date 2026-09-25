@@ -185,6 +185,24 @@ export default function App() {
   const handleDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this transmittal record?')) {
       await StorageService.deleteTransmittal(id);
+      setSelectedIds((prev) => prev.filter((i) => i !== id));
+      const updated = await StorageService.getTransmittals();
+      setForms(updated);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.length === 0) return;
+    const confirmMsg =
+      selectedIds.length === forms.length
+        ? `Are you sure you want to delete ALL ${selectedIds.length} transmittal records? This action cannot be undone.`
+        : `Are you sure you want to delete the ${selectedIds.length} selected transmittal records?`;
+
+    if (window.confirm(confirmMsg)) {
+      for (const id of selectedIds) {
+        await StorageService.deleteTransmittal(id);
+      }
+      setSelectedIds([]);
       const updated = await StorageService.getTransmittals();
       setForms(updated);
     }
@@ -274,6 +292,7 @@ export default function App() {
             onSelectAll={handleSelectAll}
             onClearSelection={handleClearSelection}
             onBulkPrint={handleBulkPrint}
+            onBulkDelete={handleBulkDelete}
             onEdit={handleEdit}
             onPrint={handlePrint}
             onDuplicate={handleDuplicate}

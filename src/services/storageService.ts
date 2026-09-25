@@ -196,27 +196,36 @@ function openDB(): Promise<IDBDatabase> {
 // LocalStorage fallback wrappers
 const LS_FORMS_KEY = 'transmittal_forms_v1';
 const LS_SETTINGS_KEY = 'transmittal_settings_v1';
+const STORAGE_INITIALIZED_KEY = 'transmittal_app_seeded_v2';
 
 function getFormsFromLocalStorage(): TransmittalForm[] {
   try {
     const raw = localStorage.getItem(LS_FORMS_KEY);
-    if (!raw) {
-      localStorage.setItem(LS_FORMS_KEY, JSON.stringify(SEED_FORMS));
-      return SEED_FORMS;
+    const hasInitialized = localStorage.getItem(STORAGE_INITIALIZED_KEY) === 'true';
+
+    // If completely first run (never initialized and no data in storage)
+    if (raw === null) {
+      if (!hasInitialized) {
+        localStorage.setItem(STORAGE_INITIALIZED_KEY, 'true');
+        localStorage.setItem(LS_FORMS_KEY, JSON.stringify(SEED_FORMS));
+        return SEED_FORMS;
+      }
+      return [];
     }
+
     const parsed = JSON.parse(raw);
-    if (Array.isArray(parsed) && (parsed.length === 0 || parsed.every((f: TransmittalForm) => f.id.startsWith('seed-ho26')))) {
-      localStorage.setItem(LS_FORMS_KEY, JSON.stringify(SEED_FORMS));
-      return SEED_FORMS;
+    if (Array.isArray(parsed)) {
+      return parsed;
     }
-    return parsed;
+    return [];
   } catch {
-    return SEED_FORMS;
+    return [];
   }
 }
 
 function saveFormsToLocalStorage(forms: TransmittalForm[]) {
   try {
+    localStorage.setItem(STORAGE_INITIALIZED_KEY, 'true');
     localStorage.setItem(LS_FORMS_KEY, JSON.stringify(forms));
   } catch (err) {
     console.warn('LocalStorage save failed:', err);
@@ -258,16 +267,13 @@ function setupFirestoreListeners(user: User) {
         }).catch(() => {});
         notifySubscribers();
       } else {
-        // If Firestore is completely empty on first sign in, upload the seed forms
-        SEED_FORMS.forEach(async (seed) => {
-          try {
-            await setDoc(doc(db, 'transmittals', seed.id), {
-              ...seed,
-              authorId: user.uid,
-              authorEmail: user.email || undefined
-            });
-          } catch {}
-        });
+        // If Firestore collection was emptied, update local mirrors to empty as well
+        saveFormsToLocalStorage([]);
+        openDB().then((idb) => {
+          const tx = idb.transaction(FORMS_STORE, 'readwrite');
+          tx.objectStore(FORMS_STORE).clear();
+        }).catch(() => {});
+        notifySubscribers();
       }
     },
     (error) => {
@@ -321,14 +327,9 @@ onAuthStateChanged(auth, (user) => {
 export const StorageService = {
   async init(): Promise<void> {
     try {
-      const forms = await this.getTransmittals();
-      const hasOldSeedsOnly = forms.length > 0 && forms.every((f) => f.id.startsWith('seed-ho26'));
-      if (forms.length === 0 || hasOldSeedsOnly) {
-        if (hasOldSeedsOnly) {
-          for (const old of forms) {
-            await this.deleteTransmittal(old.id);
-          }
-        }
+      const hasInitialized = localStorage.getItem(STORAGE_INITIALIZED_KEY) === 'true';
+      if (!hasInitialized) {
+        localStorage.setItem(STORAGE_INITIALIZED_KEY, 'true');
         for (const form of SEED_FORMS) {
           await this.saveTransmittal(form);
         }
@@ -349,11 +350,9 @@ export const StorageService = {
         const snap = await getDocs(collection(db, 'transmittals'));
         const forms: TransmittalForm[] = [];
         snap.forEach((d) => forms.push(d.data() as TransmittalForm));
-        if (forms.length > 0) {
-          forms.sort((a, b) => new Date(b.date || b.createdAt).getTime() - new Date(a.date || a.createdAt).getTime());
-          saveFormsToLocalStorage(forms);
-          return forms;
-        }
+        forms.sort((a, b) => new Date(b.date || b.createdAt).getTime() - new Date(a.date || a.createdAt).getTime());
+        saveFormsToLocalStorage(forms);
+        return forms;
       } catch {
         // Fallback to local
       }
@@ -367,14 +366,8 @@ export const StorageService = {
         const req = store.getAll();
         req.onsuccess = () => {
           let forms = req.result as TransmittalForm[];
-          if (!forms || forms.length === 0) {
+          if (!forms) {
             forms = getFormsFromLocalStorage();
-            forms.forEach((f) => {
-              try {
-                const wtx = dbInstance.transaction(FORMS_STORE, 'readwrite');
-                wtx.objectStore(FORMS_STORE).put(f);
-              } catch {}
-            });
           }
           forms.sort((a, b) => new Date(b.date || b.createdAt).getTime() - new Date(a.date || a.createdAt).getTime());
           resolve(forms);
@@ -705,6 +698,27 @@ export const StorageService = {
 
     notifySubscribers();
     return { count };
+  },
+
+  async deleteAllTransmittals(): Promise<void> {
+    const current = await this.getTransmittals();
+    for (const f of current) {
+      await this.deleteTransmittal(f.id);
+    }
+    saveFormsToLocalStorage([]);
+    try {
+      const dbInstance = await openDB();
+      const tx = dbInstance.transaction(FORMS_STORE, 'readwrite');
+      tx.objectStore(FORMS_STORE).clear();
+    } catch {}
+    notifySubscribers();
+  },
+
+  async resetToSampleData(): Promise<void> {
+    for (const seed of SEED_FORMS) {
+      await this.saveTransmittal(seed);
+    }
+    notifySubscribers();
   },
 
   subscribe(callback: () => void): () => void {
