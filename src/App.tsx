@@ -20,13 +20,13 @@ import { Plus, Printer, RefreshCw, Scissors, FileText } from 'lucide-react';
 export default function App() {
   const [forms, setForms] = useState<TransmittalForm[]>([]);
   const [settings, setSettings] = useState<TransmittalSettings>({
-    companyName: 'MICROBASE MOTORBIKE CORP',
-    companyAddress: 'MMC Complex, TASCOR Compound, Anabu 1-C, Imus Cavite',
-    companyContact: 'TEL: (046) 875-3286 | EMAIL: INFO@MMCMOTORCYCLES.COM',
+    companyName: 'MICROBASE MOTORBIKE CORPORATION',
+    companyAddress: 'MMC Complex, TASCOR Compound, Pag-Asa St., Anabu 1-C, Imus Cavite',
+    companyContact: 'Contact: (046) 875-3286 • E-mail: info@mmcmotorcycles.com',
     companyLogoUrl: '/logo.png',
-    defaultFromName: 'MARK ANTHONY REYES',
+    defaultFromName: 'EARL LIAN NAZAIRE',
     defaultFromType: 'HO',
-    defaultNotedByName: 'ENG. EDUARDO B. SANTOS',
+    defaultNotedByName: 'MARCO SAN MATEO',
     defaultNotedByType: 'HO',
     quickNamesPreset: []
   });
