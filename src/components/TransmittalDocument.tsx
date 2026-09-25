@@ -77,7 +77,7 @@ export const TransmittalDocument: React.FC<Props> = ({
           {/* Left: Logo & Company Address */}
           <div className="flex-1 py-0.5 px-2 flex items-center justify-center gap-2 sm:gap-2.5 text-center">
             <img
-              src={settings.companyLogoUrl || '/logo.png'}
+              src={settings.companyLogoUrl || `${import.meta.env.BASE_URL}logo.png`}
               alt={settings.companyName || 'Logo'}
               className="w-16 h-16 sm:w-[68px] sm:h-[68px] object-contain shrink-0"
               onError={(e) => {

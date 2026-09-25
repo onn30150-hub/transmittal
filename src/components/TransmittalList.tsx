@@ -52,7 +52,7 @@ export const TransmittalList: React.FC<Props> = ({
   // Empty State
   if (forms.length === 0) {
     return (
-      <div className="bg-white rounded-2xl border border-slate-200/80 p-12 text-center max-w-md mx-auto my-10 shadow-2xs no-print">
+      <div className="bg-white rounded-2xl border border-slate-200/80 p-12 text-center max-w-md mx-auto my-10 shadow-sm no-print">
         <div className="w-12 h-12 bg-slate-100 text-slate-400 rounded-xl flex items-center justify-center mx-auto mb-4">
           <FileText className="w-6 h-6 text-slate-500" />
         </div>
@@ -240,7 +240,7 @@ export const TransmittalList: React.FC<Props> = ({
                   <button
                     type="button"
                     onClick={() => onPrint(form)}
-                    className="flex-1 py-1.5 px-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+                    className="flex-1 py-1.5 px-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-semibold flex items-center justify-center gap-1.5 shadow-xs transition-colors cursor-pointer"
                   >
                     <Printer className="w-3.5 h-3.5 text-slate-300" />
                     <span>Preview and Print</span>
@@ -290,7 +290,7 @@ export const TransmittalList: React.FC<Props> = ({
         </div>
       ) : (
         /* Table View */
-        <div className="bg-white rounded-xl border border-slate-200/80 shadow-2xs overflow-hidden">
+        <div className="bg-white rounded-xl border border-slate-200/80 shadow-xs overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse text-xs">
               <thead>

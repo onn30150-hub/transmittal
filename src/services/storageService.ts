@@ -21,7 +21,7 @@ const DEFAULT_SETTINGS: TransmittalSettings = {
   companyName: 'MICROBASE MOTORBIKE CORPORATION',
   companyAddress: 'MMC Complex, TASCOR Compound, Pag-Asa St., Anabu 1-C, Imus Cavite',
   companyContact: 'Contact: (046) 875-3286 • E-mail: info@mmcmotorcycles.com',
-  companyLogoUrl: '/logo.png',
+  companyLogoUrl: './logo.png',
   defaultFromName: 'EARL LIAN NAZAIRE',
   defaultFromType: 'HO',
   defaultNotedByName: 'MARCO SAN MATEO',
