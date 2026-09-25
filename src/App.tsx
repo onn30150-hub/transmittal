@@ -329,10 +329,8 @@ export default function App() {
                 />
               </div>
 
-              {/* Cut Line Marker centered at 6.5in */}
-              <div className="my-1.5 py-0.5 text-center border-t-2 border-dashed border-black text-[8.5px] font-mono font-bold tracking-widest uppercase">
-                ✄ DETACH HERE - BRANCH COPY ✄
-              </div>
+              {/* Center Cut Line Divider */}
+              <div className="w-full my-1.5 border-t-2 border-dashed border-black" />
 
               {/* Bottom Half: Branch Copy (fits bottom 6.25 inches) */}
               <div className="flex-1 flex flex-col justify-center pt-2">

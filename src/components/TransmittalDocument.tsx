@@ -75,11 +75,11 @@ export const TransmittalDocument: React.FC<Props> = ({
         {/* ROW 1: Header (Company info & Logo on left, Transmittal # box on right) */}
         <div className="flex border-b-2 border-black">
           {/* Left: Logo & Company Address */}
-          <div className="flex-1 p-2 flex items-center justify-center gap-3 text-center">
+          <div className="flex-1 py-0.5 px-2 flex items-center justify-center gap-2 sm:gap-2.5 text-center">
             <img
               src={settings.companyLogoUrl || '/logo.png'}
               alt={settings.companyName || 'Logo'}
-              className="w-12 h-12 object-contain shrink-0"
+              className="w-16 h-16 sm:w-[68px] sm:h-[68px] object-contain shrink-0"
               onError={(e) => {
                 const target = e.currentTarget;
                 target.style.display = 'none';
@@ -87,17 +87,17 @@ export const TransmittalDocument: React.FC<Props> = ({
                 if (fb) fb.style.display = 'flex';
               }}
             />
-            <div className="w-10 h-10 bg-red-700 text-white hidden items-center justify-center font-black text-sm rounded shrink-0">
+            <div className="w-14 h-14 sm:w-16 sm:h-16 bg-red-700 text-white hidden items-center justify-center font-black text-base sm:text-lg rounded shrink-0">
               MMC
             </div>
             <div className="text-center">
-              <h1 className="font-extrabold text-sm sm:text-base uppercase tracking-tight text-black font-sans leading-none mb-1 text-center">
+              <h1 className="font-black text-[15px] sm:text-[17px] uppercase tracking-tight text-black font-sans leading-none mb-0.5 text-center">
                 {settings.companyName || 'MICROBASE MOTORBIKE CORPORATION'}
               </h1>
-              <p className="text-[9px] text-black leading-tight text-center">
+              <p className="font-bold text-[9.5px] sm:text-[10.5px] text-black leading-tight text-center">
                 {settings.companyAddress || 'MMC Complex, TASCOR Compound, Pag-Asa St., Anabu 1-C, Imus Cavite'}
               </p>
-              <p className="text-[8.5px] text-black leading-tight mt-0.5 text-center">
+              <p className="font-bold text-[9px] sm:text-[9.5px] text-black leading-tight mt-0.5 text-center">
                 {settings.companyContact || 'Contact: (046) 875-3286 • E-mail: info@mmcmotorcycles.com'}
               </p>
             </div>
@@ -119,20 +119,20 @@ export const TransmittalDocument: React.FC<Props> = ({
 
         {/* ROW 2: TRANSMITTAL FORM Banner + Date Created */}
         <div className="flex border-b-2 border-black bg-white">
-          <div className="flex-1 text-center py-1 font-black text-xs sm:text-sm tracking-[0.3em] uppercase">
+          <div className="flex-1 text-center py-2 font-black text-sm sm:text-base tracking-[0.3em] uppercase flex items-center justify-center">
             T R A N S M I T T A L &nbsp; F O R M
           </div>
-          <div className="w-48 sm:w-56 border-l-2 border-black text-center py-1 font-bold text-[9px] uppercase flex items-center justify-center tracking-wider">
-            DATE CREATED:&nbsp;<span className="font-black">{formattedDate}</span>
+          <div className="w-48 sm:w-56 border-l-2 border-black text-center py-1 sm:py-1.5 font-bold text-[11px] sm:text-xs uppercase flex items-center justify-center tracking-wide leading-tight">
+            DATE CREATED:&nbsp;<span className="font-black text-xs sm:text-[13px] tracking-wider">{formattedDate}</span>
           </div>
         </div>
 
         {/* ROW 3: PURPOSE */}
         <div className="flex border-b-2 border-black">
-          <div className="bg-black text-white px-3 py-1 text-[9.5px] font-black uppercase tracking-wider flex items-center justify-center shrink-0 w-24 sm:w-28">
+          <div className="bg-black text-white px-3 py-2 text-[11px] font-black uppercase tracking-wider flex items-center justify-center shrink-0 w-24 sm:w-28">
             PURPOSE:
           </div>
-          <div className="flex-1 px-3 py-1 font-bold text-[11px] uppercase tracking-wide flex items-center text-black">
+          <div className="flex-1 px-3 py-2 font-bold text-[12px] uppercase tracking-wide flex items-center text-black">
             {form.purpose || 'EQUIPMENT & DOCUMENT TRANSMITTAL'}
           </div>
         </div>
@@ -194,9 +194,9 @@ export const TransmittalDocument: React.FC<Props> = ({
         </div>
 
         {/* ROW 5: 4 Signatory Blocks (2x2 Grid) */}
-        <div className="grid grid-cols-2 border-b-2 border-black divide-x-2 divide-black">
+        <div className="grid grid-cols-2 border-b-2 border-black">
           {/* Top Left: FROM */}
-          <div className="p-2 flex flex-col justify-between border-b-2 border-black min-h-[96px] bg-white">
+          <div className="p-2 flex flex-col justify-between border-r border-b border-black min-h-[96px] bg-white">
             <div className="font-black text-[9.5px] uppercase tracking-wide text-black mb-1">
               FROM:
             </div>
@@ -209,9 +209,9 @@ export const TransmittalDocument: React.FC<Props> = ({
                   HEAD OFFICE &amp; DEPARTMENT:
                 </span>
                 <div className="flex-1 ml-1.5 relative">
-                  <div className="border-b border-black w-full relative h-[18px] flex items-end justify-center">
+                  <div className="border-b border-black w-full relative min-h-[22px] flex items-end justify-center pb-0.5">
                     {(form.fromType === 'HO' || !form.fromType) && (form.fromName || 'EARL LIAN NAZAIRE') && (
-                      <span className="font-black text-[9.5px] uppercase tracking-wider text-black">
+                      <span className="font-black text-[16px] sm:text-[18px] uppercase tracking-wide text-black leading-none truncate max-w-full">
                         {form.fromName || 'EARL LIAN NAZAIRE'}
                       </span>
                     )}
@@ -233,9 +233,9 @@ export const TransmittalDocument: React.FC<Props> = ({
                   BRANCH/OIC NAME:
                 </span>
                 <div className="flex-1 ml-1.5 relative">
-                  <div className="border-b border-black w-full relative h-[18px] flex items-end justify-center">
+                  <div className="border-b border-black w-full relative min-h-[22px] flex items-end justify-center pb-0.5">
                     {form.fromType === 'BR' && (form.fromName || 'EARL LIAN NAZAIRE') && (
-                      <span className="font-black text-[9.5px] uppercase tracking-wider text-black">
+                      <span className="font-black text-[16px] sm:text-[18px] uppercase tracking-wide text-black leading-none truncate max-w-full">
                         {form.fromName || 'EARL LIAN NAZAIRE'}
                       </span>
                     )}
@@ -257,7 +257,7 @@ export const TransmittalDocument: React.FC<Props> = ({
           </div>
 
           {/* Top Right: DELIVERED TO */}
-          <div className="p-2 flex flex-col justify-between border-b-2 border-black min-h-[96px] bg-white">
+          <div className="p-2 flex flex-col justify-between border-b border-black min-h-[96px] bg-white">
             <div className="font-black text-[9.5px] uppercase tracking-wide text-black mb-1">
               DELIVERED TO:
             </div>
@@ -270,9 +270,9 @@ export const TransmittalDocument: React.FC<Props> = ({
                   HEAD OFFICE &amp; DEPARTMENT:
                 </span>
                 <div className="flex-1 ml-1.5 relative">
-                  <div className="border-b border-black w-full relative h-[18px] flex items-end justify-center">
+                  <div className="border-b border-black w-full relative min-h-[22px] flex items-end justify-center pb-0.5">
                     {form.deliveredToType === 'HO' && form.deliveredToName && (
-                      <span className="font-black text-[9.5px] uppercase tracking-wider text-black">
+                      <span className="font-black text-[16px] sm:text-[18px] uppercase tracking-wide text-black leading-none truncate max-w-full">
                         {form.deliveredToName}
                       </span>
                     )}
@@ -294,9 +294,9 @@ export const TransmittalDocument: React.FC<Props> = ({
                   BRANCH/AM NAME:
                 </span>
                 <div className="flex-1 ml-1.5 relative">
-                  <div className="border-b border-black w-full relative h-[18px] flex items-end justify-center">
+                  <div className="border-b border-black w-full relative min-h-[22px] flex items-end justify-center pb-0.5">
                     {(form.deliveredToType === 'BR' || !form.deliveredToType) && form.deliveredToName && (
-                      <span className="font-black text-[9.5px] uppercase tracking-wider text-black">
+                      <span className="font-black text-[16px] sm:text-[18px] uppercase tracking-wide text-black leading-none truncate max-w-full">
                         {form.deliveredToName}
                       </span>
                     )}
@@ -318,7 +318,7 @@ export const TransmittalDocument: React.FC<Props> = ({
           </div>
 
           {/* Bottom Left: NOTED BY */}
-          <div className="p-2 flex flex-col justify-between min-h-[96px] bg-white">
+          <div className="p-2 flex flex-col justify-between border-r border-black min-h-[96px] bg-white">
             <div className="font-black text-[9.5px] uppercase tracking-wide text-black mb-1">
               NOTED BY:
             </div>
@@ -331,9 +331,9 @@ export const TransmittalDocument: React.FC<Props> = ({
                   HEAD OFFICE &amp; DEPARTMENT:
                 </span>
                 <div className="flex-1 ml-1.5 relative">
-                  <div className="border-b border-black w-full relative h-[18px] flex items-end justify-center">
+                  <div className="border-b border-black w-full relative min-h-[22px] flex items-end justify-center pb-0.5">
                     {(form.notedByType === 'HO' || !form.notedByType) && (form.notedByName || 'MARCO SAN MATEO') && (
-                      <span className="font-black text-[9.5px] uppercase tracking-wider text-black">
+                      <span className="font-black text-[16px] sm:text-[18px] uppercase tracking-wide text-black leading-none truncate max-w-full">
                         {form.notedByName || 'MARCO SAN MATEO'}
                       </span>
                     )}
@@ -355,9 +355,9 @@ export const TransmittalDocument: React.FC<Props> = ({
                   BRANCH/OIC NAME:
                 </span>
                 <div className="flex-1 ml-1.5 relative">
-                  <div className="border-b border-black w-full relative h-[18px] flex items-end justify-center">
+                  <div className="border-b border-black w-full relative min-h-[22px] flex items-end justify-center pb-0.5">
                     {form.notedByType === 'BR' && (form.notedByName || 'MARCO SAN MATEO') && (
-                      <span className="font-black text-[9.5px] uppercase tracking-wider text-black">
+                      <span className="font-black text-[16px] sm:text-[18px] uppercase tracking-wide text-black leading-none truncate max-w-full">
                         {form.notedByName || 'MARCO SAN MATEO'}
                       </span>
                     )}
@@ -392,9 +392,9 @@ export const TransmittalDocument: React.FC<Props> = ({
                   HEAD OFFICE &amp; DEPARTMENT:
                 </span>
                 <div className="flex-1 ml-1.5 relative">
-                  <div className="border-b border-black w-full relative h-[18px] flex items-end justify-center">
+                  <div className="border-b border-black w-full relative min-h-[22px] flex items-end justify-center pb-0.5">
                     {form.receivedByType === 'HO' && form.receivedByName && (
-                      <span className="font-black text-[9.5px] uppercase tracking-wider text-black">
+                      <span className="font-black text-[16px] sm:text-[18px] uppercase tracking-wide text-black leading-none truncate max-w-full">
                         {form.receivedByName}
                       </span>
                     )}
@@ -416,9 +416,9 @@ export const TransmittalDocument: React.FC<Props> = ({
                   BRANCH/OIC NAME:
                 </span>
                 <div className="flex-1 ml-1.5 relative">
-                  <div className="border-b border-black w-full relative h-[18px] flex items-end justify-center">
+                  <div className="border-b border-black w-full relative min-h-[22px] flex items-end justify-center pb-0.5">
                     {(form.receivedByType === 'BR' || !form.receivedByType) && form.receivedByName && (
-                      <span className="font-black text-[9.5px] uppercase tracking-wider text-black">
+                      <span className="font-black text-[16px] sm:text-[18px] uppercase tracking-wide text-black leading-none truncate max-w-full">
                         {form.receivedByName}
                       </span>
                     )}
@@ -455,7 +455,7 @@ export const TransmittalDocument: React.FC<Props> = ({
             <span className="italic font-bold uppercase shrink-0 mr-2 text-black">
               If NO
             </span>
-            <div className="border-b-2 border-black flex-1 min-h-[16px] flex items-center px-2">
+            <div className="border-b border-black flex-1 min-h-[16px] flex items-center px-2">
               {form.incompleteReason && (
                 <span className="text-[9px] font-bold text-black uppercase">
                   {form.incompleteReason}

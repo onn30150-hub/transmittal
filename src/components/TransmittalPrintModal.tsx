@@ -169,13 +169,8 @@ export const TransmittalPrintModal: React.FC<Props> = ({
                 />
               </div>
 
-              {/* Scissor Cut Line Divider at Center */}
-              <div className="relative my-2 py-1 flex items-center justify-center border-t-2 border-dashed border-slate-400">
-                <div className="absolute bg-white px-3 text-[10px] font-mono font-bold text-slate-500 flex items-center gap-1.5 uppercase tracking-widest border border-slate-300 rounded-full py-0.5">
-                  <Scissors className="w-3.5 h-3.5" />
-                  ✄ DETACH HERE - BRANCH COPY ✄
-                </div>
-              </div>
+              {/* Center Cut Line Divider */}
+              <div className="w-full my-2 border-t-2 border-dashed border-slate-400" />
 
               {/* Bottom Half: Branch Copy */}
               <div className="flex-1 pt-3 flex flex-col justify-center">
