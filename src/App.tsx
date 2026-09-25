@@ -204,7 +204,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100/70 text-slate-900 flex flex-col font-sans antialiased">
+    <div className="min-h-screen bg-slate-50 text-slate-900 flex flex-col font-sans antialiased">
       {/* Top Navigation */}
       <Navbar
         settings={settings}
@@ -215,7 +215,7 @@ export default function App() {
       />
 
       {/* Main Workspace Area */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 no-print">
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6 space-y-4 sm:space-y-5 no-print">
         {/* Statistics & Filter Controls */}
         <StatsAndFilters
           forms={forms}
@@ -228,8 +228,8 @@ export default function App() {
         {/* List of Transmittals */}
         {isLoading ? (
           <div className="p-16 flex flex-col items-center justify-center text-slate-400 gap-3">
-            <RefreshCw className="w-8 h-8 animate-spin text-red-600" />
-            <p className="text-xs font-semibold uppercase tracking-wider">Loading Transmittal Records...</p>
+            <RefreshCw className="w-7 h-7 animate-spin text-red-600" />
+            <p className="text-xs font-medium text-slate-500">Loading transmittal records...</p>
           </div>
         ) : (
           <TransmittalList
@@ -247,14 +247,14 @@ export default function App() {
         )}
       </main>
 
-      {/* Footer */}
-      <footer className="bg-white border-t border-slate-200 py-3 text-center text-xs text-slate-500 no-print mt-auto">
+      {/* Clean Light Footer */}
+      <footer className="bg-white border-t border-slate-200/80 py-3 text-center text-xs text-slate-400 no-print mt-auto">
         <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row justify-between items-center gap-1">
-          <div className="font-semibold text-slate-600">
+          <div className="font-medium text-slate-600">
             {settings.companyName}
           </div>
           <div className="text-[11px] text-slate-400">
-            Transmittal Management System
+            Transmittal Record Management
           </div>
         </div>
       </footer>

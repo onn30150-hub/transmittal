@@ -1,0 +1,71 @@
+{
+  "entities": {
+    "transmittal": {
+      "title": "Transmittal",
+      "description": "Official Transmittal Record between Head Office and Branches",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "maxLength": 128 },
+        "formNumber": { "type": "string", "maxLength": 64 },
+        "date": { "type": "string", "maxLength": 32 },
+        "purpose": { "type": "string", "maxLength": 500 },
+        "remarks": { "type": "string", "maxLength": 2000 },
+        "dropTo": { "type": "string", "maxLength": 128 },
+        "branchName": { "type": "string", "maxLength": 128 },
+        "items": { "type": "array" },
+        "fromName": { "type": "string", "maxLength": 128 },
+        "fromDesignation": { "type": "string", "maxLength": 128 },
+        "fromType": { "type": "string", "enum": ["HO", "BR"] },
+        "fromDate": { "type": "string", "maxLength": 32 },
+        "deliveredToName": { "type": "string", "maxLength": 128 },
+        "deliveredToDesignation": { "type": "string", "maxLength": 128 },
+        "deliveredToType": { "type": "string", "enum": ["HO", "BR"] },
+        "deliveredDate": { "type": "string", "maxLength": 32 },
+        "notedByName": { "type": "string", "maxLength": 128 },
+        "notedByDesignation": { "type": "string", "maxLength": 128 },
+        "notedByType": { "type": "string", "enum": ["HO", "BR"] },
+        "notedDate": { "type": "string", "maxLength": 32 },
+        "receivedByName": { "type": "string", "maxLength": 128 },
+        "receivedByDesignation": { "type": "string", "maxLength": 128 },
+        "receivedByType": { "type": "string", "enum": ["HO", "BR"] },
+        "receivedDate": { "type": "string", "maxLength": 32 },
+        "completeDelivery": { "type": "boolean" },
+        "incompleteReason": { "type": "string", "maxLength": 1000 },
+        "hardCopyUrl": { "type": "string", "maxLength": 500000 },
+        "authorId": { "type": "string", "maxLength": 128 },
+        "authorEmail": { "type": "string", "maxLength": 128 },
+        "createdAt": { "type": "string", "maxLength": 64 },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["id", "formNumber", "date", "purpose", "items", "fromName", "fromType"]
+    },
+    "settings": {
+      "title": "Settings",
+      "description": "Company global settings and defaults",
+      "type": "object",
+      "properties": {
+        "companyName": { "type": "string", "maxLength": 200 },
+        "companyAddress": { "type": "string", "maxLength": 500 },
+        "companyContact": { "type": "string", "maxLength": 500 },
+        "companyLogoUrl": { "type": "string", "maxLength": 100000 },
+        "defaultFromName": { "type": "string", "maxLength": 128 },
+        "defaultFromType": { "type": "string", "enum": ["HO", "BR"] },
+        "defaultNotedByName": { "type": "string", "maxLength": 128 },
+        "defaultNotedByType": { "type": "string", "enum": ["HO", "BR"] },
+        "quickNamesPreset": { "type": "array" },
+        "updatedAt": { "type": "string", "maxLength": 64 }
+      },
+      "required": ["companyName", "companyAddress", "companyContact"]
+    }
+  },
+  "firestore": {
+    "/transmittals/{transmittalId}": {
+      "schema": "transmittal",
+      "description": "Collection of company transmittal forms"
+    },
+    "/settings/{settingId}": {
+      "schema": "settings",
+      "description": "Company document header and default configuration"
+    }
+  }
+}

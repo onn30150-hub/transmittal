@@ -1,0 +1,87 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 1. Global Safety Net: Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Global Validation Primitives
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // 3. Entity Validation Helper for Transmittal Form
+    function isValidTransmittal(data) {
+      return data.keys().hasAll(['id', 'formNumber', 'date', 'purpose', 'items', 'fromName', 'fromType'])
+        && data.id is string && data.id.size() <= 128 && data.id.matches('^[a-zA-Z0-9_\\-]+$')
+        && data.formNumber is string && data.formNumber.size() <= 64
+        && data.date is string && data.date.size() <= 32
+        && data.purpose is string && data.purpose.size() <= 500
+        && data.fromName is string && data.fromName.size() <= 128
+        && (data.fromType == 'HO' || data.fromType == 'BR')
+        && data.items is list && data.items.size() > 0 && data.items.size() <= 50
+        && (!('remarks' in data) || (data.remarks is string && data.remarks.size() <= 2000))
+        && (!('dropTo' in data) || (data.dropTo is string && data.dropTo.size() <= 128))
+        && (!('branchName' in data) || (data.branchName is string && data.branchName.size() <= 128))
+        && (!('authorId' in data) || (data.authorId is string && data.authorId == request.auth.uid));
+    }
+
+    // 4. Entity Validation Helper for Settings
+    function isValidSettings(data) {
+      return data.keys().hasAll(['companyName', 'companyAddress', 'companyContact'])
+        && data.companyName is string && data.companyName.size() <= 200
+        && data.companyAddress is string && data.companyAddress.size() <= 500
+        && data.companyContact is string && data.companyContact.size() <= 500
+        && (!('companyLogoUrl' in data) || (data.companyLogoUrl is string && data.companyLogoUrl.size() <= 100000));
+    }
+
+    // 5. Transmittal Records Collection
+    match /transmittals/{transmittalId} {
+      allow read: if isSignedIn();
+
+      allow create: if isSignedIn()
+        && isValidId(transmittalId)
+        && incoming().id == transmittalId
+        && isValidTransmittal(incoming());
+
+      allow update: if isSignedIn()
+        && isValidId(transmittalId)
+        && isValidTransmittal(incoming())
+        && incoming().id == existing().id
+        && incoming().formNumber == existing().formNumber;
+
+      allow delete: if isSignedIn()
+        && isValidId(transmittalId);
+    }
+
+    // 6. Application & Company Settings
+    match /settings/{settingId} {
+      allow read: if isSignedIn();
+
+      allow create, update: if isSignedIn()
+        && isValidId(settingId)
+        && isValidSettings(incoming());
+
+      allow delete: if false;
+    }
+
+    // 7. Connection health-check endpoint
+    match /test/{docId} {
+      allow read: if true;
+    }
+  }
+}

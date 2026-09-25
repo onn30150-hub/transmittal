@@ -1,4 +1,16 @@
 import { TransmittalForm, TransmittalSettings, SignatoryLocationType } from '../types/transmittal';
+import {
+  collection,
+  doc,
+  getDocs,
+  getDoc,
+  setDoc,
+  deleteDoc,
+  onSnapshot,
+  Unsubscribe
+} from 'firebase/firestore';
+import { onAuthStateChanged, User } from 'firebase/auth';
+import { db, auth, handleFirestoreError, OperationType } from '../lib/firebase';
 
 const DB_NAME = 'TransmittalDB';
 const DB_VERSION = 1;
@@ -98,158 +110,34 @@ const SEED_FORMS: TransmittalForm[] = [
     fromDesignation: 'IT Systems Specialist',
     fromType: 'HO',
     deliveredToName: 'JHONATAN M. SERRANO',
-    deliveredToDesignation: 'Courier',
+    deliveredToDesignation: 'Logistics Courier',
     deliveredToType: 'HO',
     notedByName: 'ENG. EDUARDO B. SANTOS',
     notedByDesignation: 'IT Operations Head',
     notedByType: 'HO',
-    receivedByName: 'CONCEPCION BRANCH CASHIER',
+    receivedByName: 'CONCEPCION BRANCH OIC',
     receivedByDesignation: 'Branch Custodian',
     receivedByType: 'BR',
     completeDelivery: false,
-    createdAt: '2026-06-20T09:15:00.000Z'
-  },
-  {
-    id: 'it26-0107',
-    formNumber: 'IT26-0107',
-    date: '2026-06-18',
-    purpose: 'PRINTER FOR SAN LUIS',
-    remarks: 'New all-in-one printer unit with complete power cable and USB interface.',
-    dropTo: 'SAN LUIS',
-    items: [
-      { qty: 1, description: 'CANON G2020 PRINTER' }
-    ],
-    fromName: 'MARK ANTHONY REYES',
-    fromDesignation: 'IT Systems Specialist',
-    fromType: 'HO',
-    deliveredToName: 'ROLANDO DELA CRUZ',
-    deliveredToDesignation: 'Company Messenger',
-    deliveredToType: 'HO',
-    notedByName: 'ENG. EDUARDO B. SANTOS',
-    notedByDesignation: 'Operations Manager',
-    notedByType: 'HO',
-    receivedByName: 'SAN LUIS BRANCH MANAGER',
-    receivedByDesignation: 'Branch Head',
-    receivedByType: 'BR',
-    completeDelivery: false,
-    createdAt: '2026-06-18T10:00:00.000Z'
-  },
-  {
-    id: 'it26-0106',
-    formNumber: 'IT26-0106',
-    date: '2026-06-18',
-    purpose: 'BIOMETRIC FOR ARAYAT',
-    remarks: 'Time and attendance fingerprint biometric device pre-configured with network IP.',
-    dropTo: 'ARAYAT',
-    items: [
-      { qty: 1, description: 'BRANDNEW BIOMETRIC' }
-    ],
-    fromName: 'MARK ANTHONY REYES',
-    fromDesignation: 'IT Systems Specialist',
-    fromType: 'HO',
-    deliveredToName: 'ROLANDO DELA CRUZ',
-    deliveredToDesignation: 'Company Driver',
-    deliveredToType: 'HO',
-    notedByName: 'ENG. EDUARDO B. SANTOS',
-    notedByDesignation: 'Operations Manager',
-    notedByType: 'HO',
-    receivedByName: 'ARAYAT BRANCH SUPERVISOR',
-    receivedByDesignation: 'Branch Supervisor',
-    receivedByType: 'BR',
-    completeDelivery: false,
-    createdAt: '2026-06-18T14:30:00.000Z'
-  },
-  {
-    id: 'it26-0105',
-    formNumber: 'IT26-0105',
-    date: '2026-06-13',
-    purpose: 'POWER SUPPLY FOR BIOMETRIC OF ROSARIO LU',
-    remarks: 'Replacement 6V power adaptor for biometric unit at Rosario La Union.',
-    dropTo: 'ROSARIO LA UNION',
-    items: [
-      { qty: 1, description: 'BRANDNEW 6V POWERSUPPLY FOR BIOMETRIC' }
-    ],
-    fromName: 'MARK ANTHONY REYES',
-    fromDesignation: 'IT Systems Specialist',
-    fromType: 'HO',
-    deliveredToName: 'JEFFREY T. LIM',
-    deliveredToDesignation: 'Logistics Liaison',
-    deliveredToType: 'HO',
-    notedByName: 'ENG. EDUARDO B. SANTOS',
-    notedByDesignation: 'IT Operations Head',
-    notedByType: 'HO',
-    receivedByName: 'ROSARIO BRANCH CUSTODIAN',
-    receivedByDesignation: 'Branch Staff',
-    receivedByType: 'BR',
-    completeDelivery: true,
-    hardCopyUrl: 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="600" height="800" viewBox="0 0 600 800"><rect width="100%" height="100%" fill="%23f8fafc"/><rect x="20" y="20" width="560" height="760" fill="none" stroke="%2394a3b8" stroke-width="2" stroke-dasharray="4"/><text x="300" y="80" font-family="sans-serif" font-size="20" font-weight="bold" fill="%231e293b" text-anchor="middle">MICROBASE MOTORBIKE CORP</text><text x="300" y="110" font-family="sans-serif" font-size="14" fill="%2364748b" text-anchor="middle">TRANSMITTAL PROOF - IT26-0105</text><rect x="60" y="150" width="480" height="50" fill="%23e2e8f0" rx="6"/><text x="80" y="180" font-family="monospace" font-size="15" font-weight="bold" fill="%230f172a">REF: IT26-0105 | ROSARIO LA UNION</text><path d="M100 480 Q 160 410, 230 460 T 340 440" fill="none" stroke="%231d4ed8" stroke-width="3"/><text x="140" y="510" font-family="sans-serif" font-size="14" font-weight="bold" fill="%231e293b">RECEIVED IN GOOD ORDER &amp; CONDITION</text><text x="140" y="530" font-family="sans-serif" font-size="12" fill="%2364748b">Signed by Rosario Branch Custodian • June 14, 2026</text><circle cx="450" cy="500" r="45" fill="none" stroke="%2316a34a" stroke-width="2" stroke-dasharray="3"/><text x="450" y="495" font-family="sans-serif" font-size="11" font-weight="bold" fill="%2316a34a" text-anchor="middle">RECEIVED</text><text x="450" y="510" font-family="sans-serif" font-size="10" fill="%2316a34a" text-anchor="middle">BRANCH SEAL</text></svg>',
-    createdAt: '2026-06-13T08:00:00.000Z'
-  },
-  {
-    id: 'it26-0104',
-    formNumber: 'IT26-0104',
-    date: '2026-06-13',
-    purpose: 'PRINTER INK FOR MANAOAG',
-    remarks: 'Epson T664 series bottled black ink for branch daily report printing.',
-    dropTo: 'Manaoag',
-    items: [
-      { qty: 1, description: 'EPSON 664 BLACK INK FOR EPSON L360' }
-    ],
-    fromName: 'MARK ANTHONY REYES',
-    fromDesignation: 'IT Systems Specialist',
-    fromType: 'HO',
-    deliveredToName: 'JHONATAN M. SERRANO',
-    deliveredToDesignation: 'Cargo Dispatcher',
-    deliveredToType: 'HO',
-    notedByName: 'ENG. EDUARDO B. SANTOS',
-    notedByDesignation: 'IT Operations Head',
-    notedByType: 'HO',
-    receivedByName: 'MANAOAG BRANCH STAFF',
-    receivedByDesignation: 'Branch Custodian',
-    receivedByType: 'BR',
-    completeDelivery: false,
-    createdAt: '2026-06-13T11:20:00.000Z'
-  },
-  {
-    id: 'it26-0103',
-    formNumber: 'IT26-0103',
-    date: '2026-06-07',
-    purpose: 'Printer printhead replacement',
-    remarks: 'Genuine Canon replacement printhead BH-70 (Black) in factory sealed blister pack.',
-    dropTo: 'Pulong buhangin',
-    items: [
-      { qty: 1, description: 'Canon Print head BH-70' }
-    ],
-    fromName: 'MARK ANTHONY REYES',
-    fromDesignation: 'IT Systems Specialist',
-    fromType: 'HO',
-    deliveredToName: 'ROLANDO DELA CRUZ',
-    deliveredToDesignation: 'Company Driver',
-    deliveredToType: 'HO',
-    notedByName: 'ENG. EDUARDO B. SANTOS',
-    notedByDesignation: 'Operations Manager',
-    notedByType: 'HO',
-    receivedByName: 'PULONG BUHANGIN BRANCH CUSTODIAN',
-    receivedByDesignation: 'Branch Staff',
-    receivedByType: 'BR',
-    completeDelivery: false,
-    createdAt: '2026-06-07T09:40:00.000Z'
+    createdAt: '2026-06-20T08:00:00.000Z'
   },
   {
     id: 'it26-0102',
     formNumber: 'IT26-0102',
     date: '2026-06-06',
-    purpose: 'MONITOR ADAPTER',
-    remarks: '12V 2A DC regulated switching adapter with standard plug for cashier monitor.',
+    purpose: 'COMPUTER PARTS AND HARDWARE',
+    remarks: 'Replacement SSD drive and 8GB RAM module for Calasiao admin desktop workstation.',
     dropTo: 'CALASIAO',
+    branchName: 'CALASIAO',
     items: [
-      { qty: 1, description: '12V 2A POWER SUPPLY' }
+      { qty: 1, description: 'KINGSTON SSD 480GB 2.5" SATA' },
+      { qty: 1, description: 'RAM DDR4 8GB 2666MHZ KINGSTON' }
     ],
     fromName: 'MARK ANTHONY REYES',
     fromDesignation: 'IT Systems Specialist',
     fromType: 'HO',
-    deliveredToName: 'JEFFREY T. LIM',
-    deliveredToDesignation: 'Courier Liaison',
+    deliveredToName: 'RAMIL C. VALENCIA',
+    deliveredToDesignation: 'Logistics Coordinator',
     deliveredToType: 'HO',
     notedByName: 'ENG. EDUARDO B. SANTOS',
     notedByDesignation: 'IT Operations Head',
@@ -291,12 +179,13 @@ function openDB(): Promise<IDBDatabase> {
     }
     const request = indexedDB.open(DB_NAME, DB_VERSION);
     request.onupgradeneeded = (e) => {
-      const db = (e.target as IDBOpenDBRequest).result;
-      if (!db.objectStoreNames.contains(FORMS_STORE)) {
-        db.createObjectStore(FORMS_STORE, { keyPath: 'id' });
+      const target = e.target as IDBOpenDBRequest;
+      const idb = target.result;
+      if (!idb.objectStoreNames.contains(FORMS_STORE)) {
+        idb.createObjectStore(FORMS_STORE, { keyPath: 'id' });
       }
-      if (!db.objectStoreNames.contains(SETTINGS_STORE)) {
-        db.createObjectStore(SETTINGS_STORE, { keyPath: 'key' });
+      if (!idb.objectStoreNames.contains(SETTINGS_STORE)) {
+        idb.createObjectStore(SETTINGS_STORE, { keyPath: 'key' });
       }
     };
     request.onsuccess = () => resolve(request.result);
@@ -334,6 +223,101 @@ function saveFormsToLocalStorage(forms: TransmittalForm[]) {
   }
 }
 
+// Realtime Firestore listeners
+let transmittalsUnsubscribe: Unsubscribe | null = null;
+let settingsUnsubscribe: Unsubscribe | null = null;
+
+function setupFirestoreListeners(user: User) {
+  // Teardown previous listeners if any
+  if (transmittalsUnsubscribe) {
+    transmittalsUnsubscribe();
+    transmittalsUnsubscribe = null;
+  }
+  if (settingsUnsubscribe) {
+    settingsUnsubscribe();
+    settingsUnsubscribe = null;
+  }
+
+  // 1. Transmittals collection listener
+  const transmittalsColl = collection(db, 'transmittals');
+  transmittalsUnsubscribe = onSnapshot(
+    transmittalsColl,
+    (snapshot) => {
+      const forms: TransmittalForm[] = [];
+      snapshot.forEach((docSnap) => {
+        forms.push(docSnap.data() as TransmittalForm);
+      });
+
+      if (forms.length > 0) {
+        saveFormsToLocalStorage(forms);
+        // Sync to IndexedDB
+        openDB().then((idb) => {
+          const tx = idb.transaction(FORMS_STORE, 'readwrite');
+          const store = tx.objectStore(FORMS_STORE);
+          forms.forEach((f) => store.put(f));
+        }).catch(() => {});
+        notifySubscribers();
+      } else {
+        // If Firestore is completely empty on first sign in, upload the seed forms
+        SEED_FORMS.forEach(async (seed) => {
+          try {
+            await setDoc(doc(db, 'transmittals', seed.id), {
+              ...seed,
+              authorId: user.uid,
+              authorEmail: user.email || undefined
+            });
+          } catch {}
+        });
+      }
+    },
+    (error) => {
+      handleFirestoreError(error, OperationType.GET, 'transmittals');
+    }
+  );
+
+  // 2. Settings document listener
+  const settingsDocRef = doc(db, 'settings', 'main_settings');
+  settingsUnsubscribe = onSnapshot(
+    settingsDocRef,
+    (snap) => {
+      if (snap.exists()) {
+        const remoteSettings = snap.data() as TransmittalSettings;
+        localStorage.setItem(LS_SETTINGS_KEY, JSON.stringify(remoteSettings));
+        openDB().then((idb) => {
+          const tx = idb.transaction(SETTINGS_STORE, 'readwrite');
+          tx.objectStore(SETTINGS_STORE).put({ key: 'main_settings', data: remoteSettings });
+        }).catch(() => {});
+        notifySubscribers();
+      } else {
+        // Seed default settings to Firestore
+        setDoc(settingsDocRef, {
+          ...DEFAULT_SETTINGS,
+          updatedAt: new Date().toISOString()
+        }).catch(() => {});
+      }
+    },
+    (error) => {
+      handleFirestoreError(error, OperationType.GET, 'settings/main_settings');
+    }
+  );
+}
+
+// Watch auth state to activate/deactivate Firestore real-time synchronization
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    setupFirestoreListeners(user);
+  } else {
+    if (transmittalsUnsubscribe) {
+      transmittalsUnsubscribe();
+      transmittalsUnsubscribe = null;
+    }
+    if (settingsUnsubscribe) {
+      settingsUnsubscribe();
+      settingsUnsubscribe = null;
+    }
+  }
+});
+
 export const StorageService = {
   async init(): Promise<void> {
     try {
@@ -359,26 +343,39 @@ export const StorageService = {
   },
 
   async getTransmittals(): Promise<TransmittalForm[]> {
+    // If user is logged in, try direct Firestore fetch first if needed
+    if (auth.currentUser) {
+      try {
+        const snap = await getDocs(collection(db, 'transmittals'));
+        const forms: TransmittalForm[] = [];
+        snap.forEach((d) => forms.push(d.data() as TransmittalForm));
+        if (forms.length > 0) {
+          forms.sort((a, b) => new Date(b.date || b.createdAt).getTime() - new Date(a.date || a.createdAt).getTime());
+          saveFormsToLocalStorage(forms);
+          return forms;
+        }
+      } catch {
+        // Fallback to local
+      }
+    }
+
     try {
-      const db = await openDB();
+      const dbInstance = await openDB();
       return new Promise((resolve) => {
-        const tx = db.transaction(FORMS_STORE, 'readonly');
+        const tx = dbInstance.transaction(FORMS_STORE, 'readonly');
         const store = tx.objectStore(FORMS_STORE);
         const req = store.getAll();
         req.onsuccess = () => {
           let forms = req.result as TransmittalForm[];
           if (!forms || forms.length === 0) {
-            // Seed
             forms = getFormsFromLocalStorage();
-            // sync to indexeddb
             forms.forEach((f) => {
               try {
-                const wtx = db.transaction(FORMS_STORE, 'readwrite');
+                const wtx = dbInstance.transaction(FORMS_STORE, 'readwrite');
                 wtx.objectStore(FORMS_STORE).put(f);
               } catch {}
             });
           }
-          // Sort descending by date / createdAt
           forms.sort((a, b) => new Date(b.date || b.createdAt).getTime() - new Date(a.date || a.createdAt).getTime());
           resolve(forms);
         };
@@ -392,10 +389,21 @@ export const StorageService = {
   },
 
   async getTransmittal(id: string): Promise<TransmittalForm | null> {
+    if (auth.currentUser) {
+      try {
+        const docSnap = await getDoc(doc(db, 'transmittals', id));
+        if (docSnap.exists()) {
+          return docSnap.data() as TransmittalForm;
+        }
+      } catch {
+        // fallback
+      }
+    }
+
     try {
-      const db = await openDB();
+      const dbInstance = await openDB();
       return new Promise((resolve) => {
-        const tx = db.transaction(FORMS_STORE, 'readonly');
+        const tx = dbInstance.transaction(FORMS_STORE, 'readonly');
         const store = tx.objectStore(FORMS_STORE);
         const req = store.get(id);
         req.onsuccess = () => {
@@ -423,7 +431,7 @@ export const StorageService = {
       createdAt: form.createdAt || new Date().toISOString()
     };
 
-    // Save to LocalStorage
+    // 1. Save to LocalStorage
     const localForms = getFormsFromLocalStorage();
     const existingIndex = localForms.findIndex((f) => f.id === updatedForm.id);
     if (existingIndex >= 0) {
@@ -433,11 +441,11 @@ export const StorageService = {
     }
     saveFormsToLocalStorage(localForms);
 
-    // Save to IndexedDB
+    // 2. Save to IndexedDB
     try {
-      const db = await openDB();
+      const dbInstance = await openDB();
       await new Promise<void>((resolve, reject) => {
-        const tx = db.transaction(FORMS_STORE, 'readwrite');
+        const tx = dbInstance.transaction(FORMS_STORE, 'readwrite');
         const store = tx.objectStore(FORMS_STORE);
         const req = store.put(updatedForm);
         req.onsuccess = () => resolve();
@@ -447,18 +455,41 @@ export const StorageService = {
       console.warn('Could not save to IndexedDB, fallback stored in LocalStorage', err);
     }
 
+    // 3. Save to Firestore if authenticated
+    if (auth.currentUser) {
+      const path = `transmittals/${updatedForm.id}`;
+      try {
+        const payload: Record<string, any> = {
+          ...updatedForm,
+          authorId: updatedForm.authorId || auth.currentUser.uid,
+          authorEmail: updatedForm.authorEmail || auth.currentUser.email || ''
+        };
+        // Clean undefined properties before saving to Firestore
+        Object.keys(payload).forEach((key) => {
+          if (payload[key] === undefined) {
+            delete payload[key];
+          }
+        });
+        await setDoc(doc(db, 'transmittals', updatedForm.id), payload);
+      } catch (err) {
+        handleFirestoreError(err, OperationType.WRITE, path);
+      }
+    }
+
     notifySubscribers();
     return updatedForm;
   },
 
   async deleteTransmittal(id: string): Promise<void> {
+    // 1. Remove from LocalStorage
     const localForms = getFormsFromLocalStorage().filter((f) => f.id !== id);
     saveFormsToLocalStorage(localForms);
 
+    // 2. Remove from IndexedDB
     try {
-      const db = await openDB();
+      const dbInstance = await openDB();
       await new Promise<void>((resolve, reject) => {
-        const tx = db.transaction(FORMS_STORE, 'readwrite');
+        const tx = dbInstance.transaction(FORMS_STORE, 'readwrite');
         const store = tx.objectStore(FORMS_STORE);
         const req = store.delete(id);
         req.onsuccess = () => resolve();
@@ -468,14 +499,36 @@ export const StorageService = {
       console.warn('Failed to delete from IndexedDB', err);
     }
 
+    // 3. Delete from Firestore if authenticated
+    if (auth.currentUser) {
+      const path = `transmittals/${id}`;
+      try {
+        await deleteDoc(doc(db, 'transmittals', id));
+      } catch (err) {
+        handleFirestoreError(err, OperationType.DELETE, path);
+      }
+    }
+
     notifySubscribers();
   },
 
   async getSettings(): Promise<TransmittalSettings> {
+    if (auth.currentUser) {
+      try {
+        const snap = await getDoc(doc(db, 'settings', 'main_settings'));
+        if (snap.exists()) {
+          const remoteSettings = snap.data() as TransmittalSettings;
+          return { ...DEFAULT_SETTINGS, ...remoteSettings };
+        }
+      } catch {
+        // fallback to local
+      }
+    }
+
     try {
-      const db = await openDB();
+      const dbInstance = await openDB();
       return new Promise((resolve) => {
-        const tx = db.transaction(SETTINGS_STORE, 'readonly');
+        const tx = dbInstance.transaction(SETTINGS_STORE, 'readonly');
         const store = tx.objectStore(SETTINGS_STORE);
         const req = store.get('main_settings');
         req.onsuccess = () => {
@@ -483,11 +536,7 @@ export const StorageService = {
             resolve({ ...DEFAULT_SETTINGS, ...req.result.data });
           } else {
             const raw = localStorage.getItem(LS_SETTINGS_KEY);
-            if (raw) {
-              resolve({ ...DEFAULT_SETTINGS, ...JSON.parse(raw) });
-            } else {
-              resolve(DEFAULT_SETTINGS);
-            }
+            resolve(raw ? { ...DEFAULT_SETTINGS, ...JSON.parse(raw) } : DEFAULT_SETTINGS);
           }
         };
         req.onerror = () => {
@@ -507,9 +556,9 @@ export const StorageService = {
     } catch {}
 
     try {
-      const db = await openDB();
+      const dbInstance = await openDB();
       await new Promise<void>((resolve, reject) => {
-        const tx = db.transaction(SETTINGS_STORE, 'readwrite');
+        const tx = dbInstance.transaction(SETTINGS_STORE, 'readwrite');
         const store = tx.objectStore(SETTINGS_STORE);
         const req = store.put({ key: 'main_settings', data: settings });
         req.onsuccess = () => resolve();
@@ -517,6 +566,22 @@ export const StorageService = {
       });
     } catch (err) {
       console.warn('Failed to save settings to IndexedDB', err);
+    }
+
+    if (auth.currentUser) {
+      const path = 'settings/main_settings';
+      try {
+        const payload: Record<string, any> = {
+          ...settings,
+          updatedAt: new Date().toISOString()
+        };
+        Object.keys(payload).forEach((k) => {
+          if (payload[k] === undefined) delete payload[k];
+        });
+        await setDoc(doc(db, 'settings', 'main_settings'), payload);
+      } catch (err) {
+        handleFirestoreError(err, OperationType.WRITE, path);
+      }
     }
 
     notifySubscribers();
@@ -545,13 +610,17 @@ export const StorageService = {
   async exportJSON(): Promise<string> {
     const forms = await this.getTransmittals();
     const settings = await this.getSettings();
-    return JSON.stringify({
-      version: '1.0',
-      exportedAt: new Date().toISOString(),
-      company: settings.companyName,
-      forms,
-      settings
-    }, null, 2);
+    return JSON.stringify(
+      {
+        version: '1.0',
+        exportedAt: new Date().toISOString(),
+        company: settings.companyName,
+        forms,
+        settings
+      },
+      null,
+      2
+    );
   },
 
   async exportCSV(): Promise<string> {

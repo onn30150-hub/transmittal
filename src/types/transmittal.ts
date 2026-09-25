@@ -43,6 +43,8 @@ export interface TransmittalForm {
   completeDelivery: boolean;        // Delivery completion checkbox
   incompleteReason?: string;        // If NO reason
   hardCopyUrl?: string;             // Scanned signed document attachment URL
+  authorId?: string;
+  authorEmail?: string;
   createdAt: string;
   updatedAt?: string;
 }
