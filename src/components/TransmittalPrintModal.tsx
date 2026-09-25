@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { TransmittalForm, TransmittalSettings, PrintMode } from '../types/transmittal';
 import { TransmittalDocument } from './TransmittalDocument';
-import { Printer, X, Scissors, FileText, ZoomIn, ZoomOut, Check, Sparkles } from 'lucide-react';
+import { Printer, X, Scissors, FileText, ZoomIn, ZoomOut, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface Props {
-  form: TransmittalForm;
+  form?: TransmittalForm | null;
+  forms?: TransmittalForm[];
   settings: TransmittalSettings;
   isOpen: boolean;
   onClose: () => void;
@@ -14,12 +15,17 @@ interface Props {
 
 export const TransmittalPrintModal: React.FC<Props> = ({
   form,
+  forms,
   settings,
   isOpen,
   onClose,
   printMode: controlledPrintMode,
   onPrintModeChange
 }) => {
+  const formsList: TransmittalForm[] =
+    forms && forms.length > 0 ? forms : form ? [form] : [];
+
+  const [currentIndex, setCurrentIndex] = useState<number>(0);
   const [localPrintMode, setLocalPrintMode] = useState<PrintMode>('dual-copy');
   const printMode = controlledPrintMode || localPrintMode;
   const setPrintMode = (mode: PrintMode) => {
@@ -28,7 +34,10 @@ export const TransmittalPrintModal: React.FC<Props> = ({
   };
   const [zoom, setZoom] = useState<number>(100);
 
-  if (!isOpen) return null;
+  if (!isOpen || formsList.length === 0) return null;
+
+  const activeForm = formsList[Math.min(currentIndex, formsList.length - 1)] || formsList[0];
+  const isBulk = formsList.length > 1;
 
   const handlePrint = () => {
     window.print();
@@ -37,17 +46,24 @@ export const TransmittalPrintModal: React.FC<Props> = ({
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-slate-900/80 backdrop-blur-sm overflow-hidden no-print">
       {/* Top action toolbar */}
-      <div className="bg-slate-900 text-white px-6 py-3 flex flex-wrap items-center justify-between gap-3 border-b border-slate-700 shadow-md shrink-0">
+      <div className="bg-slate-900 text-white px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3 border-b border-slate-700 shadow-md shrink-0">
         <div className="flex items-center gap-3">
           <div className="p-2 bg-red-600 rounded-lg text-white font-bold flex items-center justify-center">
             <FileText className="w-5 h-5" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-base font-bold tracking-tight">Print Slip</h2>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h2 className="text-base font-bold tracking-tight">
+                {isBulk ? 'Bulk Print Preview' : 'Print Slip'}
+              </h2>
               <span className="bg-slate-800 text-red-400 font-mono px-2 py-0.5 rounded text-xs border border-slate-700 font-bold">
-                {form.formNumber}
+                {activeForm.formNumber}
               </span>
+              {isBulk && (
+                <span className="bg-red-500/20 text-red-300 font-bold px-2 py-0.5 rounded text-xs border border-red-500/30">
+                  {formsList.length} Slips Selected
+                </span>
+              )}
               <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded text-[11px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/40">
                 8.5" × 13" Long Bond / Folio
               </span>
@@ -56,12 +72,41 @@ export const TransmittalPrintModal: React.FC<Props> = ({
         </div>
 
         {/* Layout toggle & Actions */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+          {/* Multiple slip pager (for bulk) */}
+          {isBulk && (
+            <div className="flex items-center bg-slate-800 rounded-lg border border-slate-700 px-1 py-0.5 text-xs">
+              <button
+                type="button"
+                onClick={() => setCurrentIndex((prev) => Math.max(0, prev - 1))}
+                disabled={currentIndex === 0}
+                className="p-1 text-slate-300 hover:text-white disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                title="Previous slip"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <span className="px-2 text-slate-200 font-medium">
+                {currentIndex + 1} of {formsList.length}
+              </span>
+              <button
+                type="button"
+                onClick={() =>
+                  setCurrentIndex((prev) => Math.min(formsList.length - 1, prev + 1))
+                }
+                disabled={currentIndex === formsList.length - 1}
+                className="p-1 text-slate-300 hover:text-white disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                title="Next slip"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
           {/* Print mode selector */}
           <div className="flex items-center bg-slate-800 p-1 rounded-lg border border-slate-700 text-xs">
             <button
               onClick={() => setPrintMode('dual-copy')}
-              className={`px-3 py-1.5 rounded-md font-medium flex items-center gap-1.5 transition-all ${
+              className={`px-3 py-1.5 rounded-md font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
                 printMode === 'dual-copy'
                   ? 'bg-red-600 text-white shadow-sm'
                   : 'text-slate-300 hover:text-white'
@@ -72,7 +117,7 @@ export const TransmittalPrintModal: React.FC<Props> = ({
             </button>
             <button
               onClick={() => setPrintMode('full-page')}
-              className={`px-3 py-1.5 rounded-md font-medium flex items-center gap-1.5 transition-all ${
+              className={`px-3 py-1.5 rounded-md font-medium flex items-center gap-1.5 transition-all cursor-pointer ${
                 printMode === 'full-page'
                   ? 'bg-red-600 text-white shadow-sm'
                   : 'text-slate-300 hover:text-white'
@@ -87,7 +132,7 @@ export const TransmittalPrintModal: React.FC<Props> = ({
           <div className="hidden lg:flex items-center bg-slate-800 rounded-lg border border-slate-700 text-xs text-slate-300 px-2 py-1 gap-2">
             <button
               onClick={() => setZoom((z) => Math.max(50, z - 15))}
-              className="p-1 hover:text-white"
+              className="p-1 hover:text-white cursor-pointer"
               title="Zoom out"
             >
               <ZoomOut className="w-3.5 h-3.5" />
@@ -95,7 +140,7 @@ export const TransmittalPrintModal: React.FC<Props> = ({
             <span className="font-mono w-10 text-center">{zoom}%</span>
             <button
               onClick={() => setZoom((z) => Math.min(150, z + 15))}
-              className="p-1 hover:text-white"
+              className="p-1 hover:text-white cursor-pointer"
               title="Zoom in"
             >
               <ZoomIn className="w-3.5 h-3.5" />
@@ -105,10 +150,10 @@ export const TransmittalPrintModal: React.FC<Props> = ({
           {/* Print button */}
           <button
             onClick={handlePrint}
-            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-5 py-2 rounded-lg font-semibold shadow-lg shadow-emerald-900/30 transition-all cursor-pointer text-sm"
+            className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white px-4 sm:px-5 py-2 rounded-lg font-semibold shadow-lg shadow-emerald-900/30 transition-all cursor-pointer text-xs sm:text-sm active:scale-98"
           >
             <Printer className="w-4 h-4" />
-            Print Document
+            <span>{isBulk ? `Print All (${formsList.length}) Slips` : 'Print Document'}</span>
           </button>
 
           <button
@@ -122,24 +167,26 @@ export const TransmittalPrintModal: React.FC<Props> = ({
       </div>
 
       {/* Sub-bar: Paper Specs Hint */}
-      <div className="bg-slate-800/90 text-slate-300 text-xs px-6 py-1.5 flex items-center justify-between border-b border-slate-700/60 shrink-0">
-        <div className="flex items-center gap-2 text-[11.5px]">
+      <div className="bg-slate-800/90 text-slate-300 text-xs px-4 sm:px-6 py-1.5 flex items-center justify-between border-b border-slate-700/60 shrink-0">
+        <div className="flex items-center gap-2 text-[11.5px] truncate">
           <span className="font-semibold text-white">Target Paper:</span>
-          <span>8.5" × 13" (Philippine Long Bond / Folio / F4)</span>
+          <span>8.5" × 13" (Folio / Philippine Long Bond)</span>
           <span className="text-slate-400">•</span>
-          <span className="text-slate-300">
-            {printMode === 'dual-copy'
-              ? '2-in-1 layout: Head Office Copy (top) & Branch Copy (bottom) with center cut line'
-              : 'Full page layout (expanded items table)'}
+          <span className="text-slate-300 truncate">
+            {isBulk
+              ? `Bulk print: Each of the ${formsList.length} slips will be printed on a separate sheet.`
+              : printMode === 'dual-copy'
+              ? '2-in-1 layout: Head Office Copy (top) & Branch Copy (bottom)'
+              : 'Full page layout'}
           </span>
         </div>
-        <span className="text-amber-400 text-[11px] font-medium hidden md:inline">
-          Tip: In Print Dialog, select Paper size "Folio", "8.5 × 13", or "Legal" with Margins "Default"
+        <span className="text-amber-400 text-[11px] font-medium hidden md:inline shrink-0">
+          Tip: In Print Dialog, select Paper "Folio", "8.5 × 13", or "Legal" with Margins "Default"
         </span>
       </div>
 
       {/* Preview Canvas Area */}
-      <div className="flex-1 overflow-auto p-6 md:p-10 flex justify-center items-start bg-slate-950/60">
+      <div className="flex-1 overflow-auto p-4 sm:p-6 md:p-10 flex justify-center items-start bg-slate-950/60">
         <div
           style={{ transform: `scale(${zoom / 100})`, transformOrigin: 'top center' }}
           className="transition-transform duration-150"
@@ -148,7 +195,7 @@ export const TransmittalPrintModal: React.FC<Props> = ({
             /* Full Page View (8.5in x 13in proportion: 800px x 1224px) */
             <div className="w-[800px] min-h-[1224px] bg-white shadow-2xl rounded-sm border border-slate-300 p-4 flex flex-col justify-between">
               <TransmittalDocument
-                form={form}
+                form={activeForm}
                 settings={settings}
                 watermarkType="head-office"
                 copyLabel="HEAD OFFICE COPY"
@@ -161,7 +208,7 @@ export const TransmittalPrintModal: React.FC<Props> = ({
               {/* Top Half: Head Office Copy */}
               <div className="flex-1 pb-3 flex flex-col justify-center">
                 <TransmittalDocument
-                  form={form}
+                  form={activeForm}
                   settings={settings}
                   watermarkType="head-office"
                   copyLabel="HEAD OFFICE COPY"
@@ -175,7 +222,7 @@ export const TransmittalPrintModal: React.FC<Props> = ({
               {/* Bottom Half: Branch Copy */}
               <div className="flex-1 pt-3 flex flex-col justify-center">
                 <TransmittalDocument
-                  form={form}
+                  form={activeForm}
                   settings={settings}
                   watermarkType="branch"
                   copyLabel="BRANCH COPY"

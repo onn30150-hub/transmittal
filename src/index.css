@@ -48,11 +48,29 @@
     margin: 0 auto !important;
     padding: 0 !important;
     box-sizing: border-box !important;
-    page-break-after: avoid !important;
     page-break-inside: avoid !important;
-    break-after: avoid !important;
     break-inside: avoid !important;
     overflow: hidden !important;
+  }
+
+  .print-page {
+    width: 7.9in !important;
+    max-width: 7.9in !important;
+    height: 12.5in !important;
+    max-height: 12.5in !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    box-sizing: border-box !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-after: always !important;
+    break-after: page !important;
+    overflow: hidden !important;
+  }
+
+  .print-page:last-child {
+    page-break-after: auto !important;
+    break-after: auto !important;
   }
 
   .avoid-break {

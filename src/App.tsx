@@ -50,7 +50,9 @@ export default function App() {
 
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [activePrintForm, setActivePrintForm] = useState<TransmittalForm | null>(null);
+  const [printBatchForms, setPrintBatchForms] = useState<TransmittalForm[]>([]);
   const [activePrintMode, setActivePrintMode] = useState<PrintMode>('dual-copy');
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const [isHardCopyModalOpen, setIsHardCopyModalOpen] = useState(false);
   const [activeHardCopyForm, setActiveHardCopyForm] = useState<TransmittalForm | null>(null);
@@ -130,7 +132,35 @@ export default function App() {
 
   const handlePrint = (form: TransmittalForm) => {
     setActivePrintForm(form);
+    setPrintBatchForms([form]);
     setIsPrintModalOpen(true);
+  };
+
+  const handleBulkPrint = () => {
+    const selected = forms.filter((f) => selectedIds.includes(f.id));
+    if (selected.length > 0) {
+      setActivePrintForm(selected[0]);
+      setPrintBatchForms(selected);
+      setIsPrintModalOpen(true);
+    }
+  };
+
+  const handleToggleSelect = (id: string) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedIds.length === filteredForms.length && filteredForms.length > 0) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filteredForms.map((f) => f.id));
+    }
+  };
+
+  const handleClearSelection = () => {
+    setSelectedIds([]);
   };
 
   const handleDuplicate = async (form: TransmittalForm) => {
@@ -212,6 +242,8 @@ export default function App() {
         onOpenSettings={() => setIsSettingsOpen(true)}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
+        viewMode={viewMode}
+        onViewModeChange={setViewMode}
       />
 
       {/* Main Workspace Area */}
@@ -221,9 +253,10 @@ export default function App() {
           forms={forms}
           filters={filters}
           onFilterChange={setFilters}
-          viewMode={viewMode}
-          onViewModeChange={setViewMode}
         />
+
+        {/* Divider Separation Line */}
+        <div className="border-t border-slate-200/80" />
 
         {/* List of Transmittals */}
         {isLoading ? (
@@ -236,6 +269,11 @@ export default function App() {
             forms={filteredForms}
             settings={settings}
             viewMode={viewMode}
+            selectedIds={selectedIds}
+            onToggleSelect={handleToggleSelect}
+            onSelectAll={handleSelectAll}
+            onClearSelection={handleClearSelection}
+            onBulkPrint={handleBulkPrint}
             onEdit={handleEdit}
             onPrint={handlePrint}
             onDuplicate={handleDuplicate}
@@ -280,9 +318,9 @@ export default function App() {
         />
       )}
 
-      {isPrintModalOpen && activePrintForm && (
+      {isPrintModalOpen && (printBatchForms.length > 0 || activePrintForm) && (
         <TransmittalPrintModal
-          form={activePrintForm}
+          forms={printBatchForms.length > 0 ? printBatchForms : activePrintForm ? [activePrintForm] : []}
           settings={settings}
           isOpen={isPrintModalOpen}
           onClose={() => setIsPrintModalOpen(false)}
@@ -313,48 +351,53 @@ export default function App() {
       {/* PRINT-ONLY DOM CONTAINER:
           Targeted directly by `@media print` when window.print() is called.
           Optimized for 8.5in x 13in (Philippine Long Bond / Folio) paper!
+          Supports bulk printing: each slip renders on its own separate sheet.
       */}
-      {activePrintForm && (
-        <div className="print-only print-container">
-          {activePrintMode === 'dual-copy' ? (
-            <div className="w-full h-full flex flex-col justify-between">
-              {/* Top Half: Head Office Copy (fits top 6.25 inches) */}
-              <div className="flex-1 flex flex-col justify-center pb-2">
-                <TransmittalDocument
-                  form={activePrintForm}
-                  settings={settings}
-                  watermarkType="head-office"
-                  copyLabel="HEAD OFFICE COPY"
-                  isCompact={true}
-                />
-              </div>
+      {(printBatchForms.length > 0 ? printBatchForms : activePrintForm ? [activePrintForm] : []).length > 0 && (
+        <div className="print-only">
+          {(printBatchForms.length > 0 ? printBatchForms : activePrintForm ? [activePrintForm] : []).map((batchForm) => (
+            <div key={batchForm.id} className="print-page">
+              {activePrintMode === 'dual-copy' ? (
+                <div className="w-full h-full flex flex-col justify-between">
+                  {/* Top Half: Head Office Copy (fits top 6.25 inches) */}
+                  <div className="flex-1 flex flex-col justify-center pb-2">
+                    <TransmittalDocument
+                      form={batchForm}
+                      settings={settings}
+                      watermarkType="head-office"
+                      copyLabel="HEAD OFFICE COPY"
+                      isCompact={true}
+                    />
+                  </div>
 
-              {/* Center Cut Line Divider */}
-              <div className="w-full my-1.5 border-t-2 border-dashed border-black" />
+                  {/* Center Cut Line Divider */}
+                  <div className="w-full my-1.5 border-t-2 border-dashed border-black" />
 
-              {/* Bottom Half: Branch Copy (fits bottom 6.25 inches) */}
-              <div className="flex-1 flex flex-col justify-center pt-2">
-                <TransmittalDocument
-                  form={activePrintForm}
-                  settings={settings}
-                  watermarkType="branch"
-                  copyLabel="BRANCH COPY"
-                  isCompact={true}
-                />
-              </div>
+                  {/* Bottom Half: Branch Copy (fits bottom 6.25 inches) */}
+                  <div className="flex-1 flex flex-col justify-center pt-2">
+                    <TransmittalDocument
+                      form={batchForm}
+                      settings={settings}
+                      watermarkType="branch"
+                      copyLabel="BRANCH COPY"
+                      isCompact={true}
+                    />
+                  </div>
+                </div>
+              ) : (
+                /* Full Page Mode on 8.5in x 13in sheet */
+                <div className="w-full h-full flex flex-col justify-center">
+                  <TransmittalDocument
+                    form={batchForm}
+                    settings={settings}
+                    watermarkType="head-office"
+                    copyLabel="HEAD OFFICE COPY"
+                    isCompact={false}
+                  />
+                </div>
+              )}
             </div>
-          ) : (
-            /* Full Page Mode on 8.5in x 13in sheet */
-            <div className="w-full h-full flex flex-col justify-center">
-              <TransmittalDocument
-                form={activePrintForm}
-                settings={settings}
-                watermarkType="head-office"
-                copyLabel="HEAD OFFICE COPY"
-                isCompact={false}
-              />
-            </div>
-          )}
+          ))}
         </div>
       )}
     </div>

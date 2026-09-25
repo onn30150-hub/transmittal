@@ -8,7 +8,9 @@ import {
   Cloud,
   LogOut,
   LogIn,
-  X
+  X,
+  LayoutGrid,
+  List
 } from 'lucide-react';
 
 interface Props {
@@ -17,6 +19,8 @@ interface Props {
   onOpenSettings: () => void;
   searchQuery: string;
   onSearchChange: (q: string) => void;
+  viewMode: 'table' | 'cards';
+  onViewModeChange: (mode: 'table' | 'cards') => void;
 }
 
 export const Navbar: React.FC<Props> = ({
@@ -24,7 +28,9 @@ export const Navbar: React.FC<Props> = ({
   onNewTransmittal,
   onOpenSettings,
   searchQuery,
-  onSearchChange
+  onSearchChange,
+  viewMode,
+  onViewModeChange
 }) => {
   const { user, cloudConnected, signIn, signOut } = useAuth();
 
@@ -88,6 +94,34 @@ export const Navbar: React.FC<Props> = ({
 
           {/* Action Bar */}
           <div className="flex items-center gap-2 shrink-0">
+            {/* View Mode Toggle (Cards vs Table) */}
+            <div className="flex items-center bg-slate-100 p-0.5 rounded-xl border border-slate-200">
+              <button
+                type="button"
+                onClick={() => onViewModeChange('cards')}
+                className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                  viewMode === 'cards'
+                    ? 'bg-white text-slate-900 shadow-2xs'
+                    : 'text-slate-400 hover:text-slate-700'
+                }`}
+                title="Card View"
+              >
+                <LayoutGrid className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => onViewModeChange('table')}
+                className={`p-1.5 rounded-lg transition-all cursor-pointer ${
+                  viewMode === 'table'
+                    ? 'bg-white text-slate-900 shadow-2xs'
+                    : 'text-slate-400 hover:text-slate-700'
+                }`}
+                title="Table View"
+              >
+                <List className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
             {/* Cloud Sync Status */}
             {user ? (
               <div className="flex items-center gap-2 bg-slate-50 border border-slate-200/90 rounded-xl px-2.5 py-1.5 shadow-2xs">
