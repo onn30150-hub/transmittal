@@ -103,9 +103,9 @@ export const TransmittalEditorModal: React.FC<Props> = ({
     id: '',
     formNumber: '',
     date: new Date().toISOString().slice(0, 10),
-    purpose: COMMON_PURPOSES[0],
+    purpose: '',
     remarks: '',
-    dropTo: COMMON_DROPS[0],
+    dropTo: '',
     items: [{ qty: 1, description: '' }],
     fromName: settings.defaultFromName || '',
     fromDesignation: 'IT Systems / Liaison',
@@ -140,9 +140,9 @@ export const TransmittalEditorModal: React.FC<Props> = ({
           id: 'trans-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
           formNumber: num,
           date: new Date().toISOString().slice(0, 10),
-          purpose: COMMON_PURPOSES[0],
+          purpose: '',
           remarks: 'Please check items and serial numbers upon receipt. Report any damage within 24 hours.',
-          dropTo: COMMON_DROPS[0],
+          dropTo: '',
           items: [{ qty: 1, description: '' }],
           fromName: settings.defaultFromName || 'MARK ANTHONY REYES',
           fromDesignation: 'IT Systems / Logistics',
@@ -348,25 +348,6 @@ export const TransmittalEditorModal: React.FC<Props> = ({
 
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                  Courier / Drop-off
-                </label>
-                <input
-                  type="text"
-                  list="drops-list"
-                  value={formData.dropTo || ''}
-                  onChange={(e) => setFormData({ ...formData, dropTo: e.target.value.toUpperCase() })}
-                  placeholder="e.g. VILLASIS"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white uppercase focus:outline-none focus:ring-2 focus:ring-red-500"
-                />
-                <datalist id="drops-list">
-                  {COMMON_DROPS.map((drop, i) => (
-                    <option key={i} value={drop} />
-                  ))}
-                </datalist>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
                   Branch / Destination
                 </label>
                 <input
@@ -379,32 +360,37 @@ export const TransmittalEditorModal: React.FC<Props> = ({
                       remarks: e.target.value.toUpperCase()
                     })
                   }
-                  placeholder="e.g. BAYAMBANG"
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white uppercase font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-500"
+                  placeholder="branch"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white uppercase focus:outline-none focus:ring-2 focus:ring-red-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  DROP TO
+                </label>
+                <input
+                  type="text"
+                  value={formData.dropTo || ''}
+                  onChange={(e) => setFormData({ ...formData, dropTo: e.target.value.toUpperCase() })}
+                  placeholder="drop off branch"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white uppercase focus:outline-none focus:ring-2 focus:ring-red-500"
                 />
               </div>
             </div>
 
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Purpose
+                PURPOSE(TITLE)
               </label>
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  list="purposes-list"
-                  value={formData.purpose}
-                  onChange={(e) => setFormData({ ...formData, purpose: e.target.value.toUpperCase() })}
-                  placeholder="Enter or select purpose..."
-                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-medium uppercase bg-white focus:outline-none focus:ring-2 focus:ring-red-500"
-                  required
-                />
-                <datalist id="purposes-list">
-                  {COMMON_PURPOSES.map((purp, i) => (
-                    <option key={i} value={purp} />
-                  ))}
-                </datalist>
-              </div>
+              <input
+                type="text"
+                value={formData.purpose}
+                onChange={(e) => setFormData({ ...formData, purpose: e.target.value.toUpperCase() })}
+                placeholder="purpose..."
+                className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-medium uppercase bg-white focus:outline-none focus:ring-2 focus:ring-red-500"
+                required
+              />
             </div>
           </div>
 

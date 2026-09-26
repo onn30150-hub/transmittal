@@ -108,9 +108,9 @@ export const TransmittalDocument: React.FC<Props> = ({
             <div className="bg-black text-white text-center py-1 text-[9px] font-bold tracking-wider uppercase">
               TRANSMITTAL FORM #:
             </div>
-            <div className="flex-1 flex items-center justify-center gap-2 px-2 py-1.5 bg-white">
-              <span className="font-black text-xs text-black uppercase">TF#:</span>
-              <span className="font-black text-base sm:text-lg text-red-600 font-mono tracking-wider">
+            <div className="flex-1 flex items-center justify-center gap-2 px-2 py-1.5 bg-white font-share-tech-mono">
+              <span className="font-bold text-xs text-black uppercase">TF#:</span>
+              <span className="font-bold text-base sm:text-lg text-red-600 tracking-wider">
                 {form.formNumber}
               </span>
             </div>
@@ -211,7 +211,7 @@ export const TransmittalDocument: React.FC<Props> = ({
                 <div className="flex-1 ml-1.5 relative">
                   <div className="border-b border-black w-full relative min-h-[22px] flex items-end justify-center pb-0.5">
                     {(form.fromType === 'HO' || !form.fromType) && (form.fromName || 'EARL LIAN NAZAIRE') && (
-                      <span className="font-black text-[16px] sm:text-[18px] uppercase tracking-wide text-black leading-none truncate max-w-full">
+                      <span className="font-bold text-[14.5px] sm:text-[16px] uppercase tracking-wide text-black leading-none truncate max-w-full font-share-tech-mono">
                         {form.fromName || 'EARL LIAN NAZAIRE'}
                       </span>
                     )}
@@ -235,7 +235,7 @@ export const TransmittalDocument: React.FC<Props> = ({
                 <div className="flex-1 ml-1.5 relative">
                   <div className="border-b border-black w-full relative min-h-[22px] flex items-end justify-center pb-0.5">
                     {form.fromType === 'BR' && (form.fromName || 'EARL LIAN NAZAIRE') && (
-                      <span className="font-black text-[16px] sm:text-[18px] uppercase tracking-wide text-black leading-none truncate max-w-full">
+                      <span className="font-bold text-[14.5px] sm:text-[16px] uppercase tracking-wide text-black leading-none truncate max-w-full font-share-tech-mono">
                         {form.fromName || 'EARL LIAN NAZAIRE'}
                       </span>
                     )}
@@ -272,7 +272,7 @@ export const TransmittalDocument: React.FC<Props> = ({
                 <div className="flex-1 ml-1.5 relative">
                   <div className="border-b border-black w-full relative min-h-[22px] flex items-end justify-center pb-0.5">
                     {form.deliveredToType === 'HO' && form.deliveredToName && (
-                      <span className="font-black text-[16px] sm:text-[18px] uppercase tracking-wide text-black leading-none truncate max-w-full">
+                      <span className="font-bold text-[14.5px] sm:text-[16px] uppercase tracking-wide text-black leading-none truncate max-w-full font-share-tech-mono">
                         {form.deliveredToName}
                       </span>
                     )}
@@ -296,7 +296,7 @@ export const TransmittalDocument: React.FC<Props> = ({
                 <div className="flex-1 ml-1.5 relative">
                   <div className="border-b border-black w-full relative min-h-[22px] flex items-end justify-center pb-0.5">
                     {(form.deliveredToType === 'BR' || !form.deliveredToType) && form.deliveredToName && (
-                      <span className="font-black text-[16px] sm:text-[18px] uppercase tracking-wide text-black leading-none truncate max-w-full">
+                      <span className="font-bold text-[14.5px] sm:text-[16px] uppercase tracking-wide text-black leading-none truncate max-w-full font-share-tech-mono">
                         {form.deliveredToName}
                       </span>
                     )}
@@ -333,7 +333,7 @@ export const TransmittalDocument: React.FC<Props> = ({
                 <div className="flex-1 ml-1.5 relative">
                   <div className="border-b border-black w-full relative min-h-[22px] flex items-end justify-center pb-0.5">
                     {(form.notedByType === 'HO' || !form.notedByType) && (form.notedByName || 'MARCO SAN MATEO') && (
-                      <span className="font-black text-[16px] sm:text-[18px] uppercase tracking-wide text-black leading-none truncate max-w-full">
+                      <span className="font-bold text-[14.5px] sm:text-[16px] uppercase tracking-wide text-black leading-none truncate max-w-full font-share-tech-mono">
                         {form.notedByName || 'MARCO SAN MATEO'}
                       </span>
                     )}
@@ -357,7 +357,7 @@ export const TransmittalDocument: React.FC<Props> = ({
                 <div className="flex-1 ml-1.5 relative">
                   <div className="border-b border-black w-full relative min-h-[22px] flex items-end justify-center pb-0.5">
                     {form.notedByType === 'BR' && (form.notedByName || 'MARCO SAN MATEO') && (
-                      <span className="font-black text-[16px] sm:text-[18px] uppercase tracking-wide text-black leading-none truncate max-w-full">
+                      <span className="font-bold text-[14.5px] sm:text-[16px] uppercase tracking-wide text-black leading-none truncate max-w-full font-share-tech-mono">
                         {form.notedByName || 'MARCO SAN MATEO'}
                       </span>
                     )}
@@ -394,7 +394,7 @@ export const TransmittalDocument: React.FC<Props> = ({
                 <div className="flex-1 ml-1.5 relative">
                   <div className="border-b border-black w-full relative min-h-[22px] flex items-end justify-center pb-0.5">
                     {form.receivedByType === 'HO' && form.receivedByName && (
-                      <span className="font-black text-[16px] sm:text-[18px] uppercase tracking-wide text-black leading-none truncate max-w-full">
+                      <span className="font-bold text-[14.5px] sm:text-[16px] uppercase tracking-wide text-black leading-none truncate max-w-full font-share-tech-mono">
                         {form.receivedByName}
                       </span>
                     )}
@@ -418,7 +418,7 @@ export const TransmittalDocument: React.FC<Props> = ({
                 <div className="flex-1 ml-1.5 relative">
                   <div className="border-b border-black w-full relative min-h-[22px] flex items-end justify-center pb-0.5">
                     {(form.receivedByType === 'BR' || !form.receivedByType) && form.receivedByName && (
-                      <span className="font-black text-[16px] sm:text-[18px] uppercase tracking-wide text-black leading-none truncate max-w-full">
+                      <span className="font-bold text-[14.5px] sm:text-[16px] uppercase tracking-wide text-black leading-none truncate max-w-full font-share-tech-mono">
                         {form.receivedByName}
                       </span>
                     )}
