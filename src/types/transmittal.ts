@@ -49,6 +49,13 @@ export interface TransmittalForm {
   updatedAt?: string;
 }
 
+export interface ItemTemplate {
+  id: string;
+  label: string;
+  purpose?: string;
+  items: TransmittalItem[];
+}
+
 export interface TransmittalSettings {
   companyName: string;              // "MICROBASE MOTORBIKE CORP"
   companyAddress: string;           // "MMC Complex, TASCOR Compound, Anabu 1-C, Imus Cavite"
@@ -59,6 +66,7 @@ export interface TransmittalSettings {
   defaultNotedByName: string;
   defaultNotedByType: SignatoryLocationType;
   quickNamesPreset: string[];       // Quick-click names for fast entry
+  templates?: ItemTemplate[];       // Quick item templates
 }
 
 export interface FilterOptions {

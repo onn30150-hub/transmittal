@@ -1,4 +1,4 @@
-import { TransmittalForm, TransmittalSettings, SignatoryLocationType } from '../types/transmittal';
+import { TransmittalForm, TransmittalSettings, SignatoryLocationType, ItemTemplate } from '../types/transmittal';
 import {
   collection,
   doc,
@@ -15,6 +15,49 @@ const DB_NAME = 'TransmittalDB';
 const DB_VERSION = 1;
 const FORMS_STORE = 'transmittal_forms';
 const SETTINGS_STORE = 'transmittal_settings';
+
+export const DEFAULT_ITEM_TEMPLATES: ItemTemplate[] = [
+  {
+    id: 'tmpl-epson-ink',
+    label: 'Epson Ink 003 (BK/Y/C)',
+    purpose: 'PRINTER INK',
+    items: [
+      { qty: 1, description: 'EPSON INK 003 (BK)' },
+      { qty: 1, description: 'EPSON INK 003 (Y)' },
+      { qty: 1, description: 'EPSON INK 003 (C)' }
+    ]
+  },
+  {
+    id: 'tmpl-pos-setup',
+    label: 'POS Setup',
+    purpose: 'POS HARDWARE SETUP',
+    items: [
+      { qty: 1, description: 'Epson TM-T82III Thermal Receipt Printer (S/N: )' },
+      { qty: 1, description: 'Honeywell Handheld Barcode Scanner' },
+      { qty: 5, description: 'Thermal Paper Rolls 80mm' }
+    ]
+  },
+  {
+    id: 'tmpl-orcr-docs',
+    label: 'OR/CR Docs',
+    purpose: 'OR/CR DOCUMENTS',
+    items: [
+      { qty: 5, description: 'Original LTO OR/CR documents (Motorcycle Units)' },
+      { qty: 5, description: 'Original Sales Invoice with Notarized Deed of Sale' },
+      { qty: 5, description: 'Ignition Duplicate Keys with barcode tags' }
+    ]
+  },
+  {
+    id: 'tmpl-promo-pack',
+    label: 'Promo Pack',
+    purpose: 'MARKETING PROMO PACK',
+    items: [
+      { qty: 2, description: 'Roll-up Display Banner Standees (6ft x 2.5ft)' },
+      { qty: 300, description: 'Promo Marketing Brochures & Financing Guides' },
+      { qty: 15, description: 'Company Uniform Polo Shirts (M/L/XL)' }
+    ]
+  }
+];
 
 const DEFAULT_SETTINGS: TransmittalSettings = {
   companyName: 'MICROBASE MOTORBIKE CORPORATION',
@@ -36,7 +79,8 @@ const DEFAULT_SETTINGS: TransmittalSettings = {
     'MARIA CRISTINA SANTOS',
     'JASMIN P. MORALES',
     'ARNEL B. MENDOZA'
-  ]
+  ],
+  templates: DEFAULT_ITEM_TEMPLATES
 };
 
 const SEED_FORMS: TransmittalForm[] = [
@@ -485,11 +529,19 @@ export const StorageService = {
   },
 
   async getSettings(): Promise<TransmittalSettings> {
+    const ensureTemplates = (s: Partial<TransmittalSettings>): TransmittalSettings => {
+      return {
+        ...DEFAULT_SETTINGS,
+        ...s,
+        templates: s.templates && s.templates.length > 0 ? s.templates : DEFAULT_ITEM_TEMPLATES
+      };
+    };
+
     try {
       const snap = await getDoc(doc(db, 'settings', 'main_settings'));
       if (snap.exists()) {
         const remoteSettings = snap.data() as TransmittalSettings;
-        return { ...DEFAULT_SETTINGS, ...remoteSettings };
+        return ensureTemplates(remoteSettings);
       }
     } catch {}
 
@@ -501,20 +553,20 @@ export const StorageService = {
         const req = store.get('main_settings');
         req.onsuccess = () => {
           if (req.result?.data) {
-            resolve({ ...DEFAULT_SETTINGS, ...req.result.data });
+            resolve(ensureTemplates(req.result.data));
           } else {
             const raw = localStorage.getItem(LS_SETTINGS_KEY);
-            resolve(raw ? { ...DEFAULT_SETTINGS, ...JSON.parse(raw) } : DEFAULT_SETTINGS);
+            resolve(raw ? ensureTemplates(JSON.parse(raw)) : DEFAULT_SETTINGS);
           }
         };
         req.onerror = () => {
           const raw = localStorage.getItem(LS_SETTINGS_KEY);
-          resolve(raw ? { ...DEFAULT_SETTINGS, ...JSON.parse(raw) } : DEFAULT_SETTINGS);
+          resolve(raw ? ensureTemplates(JSON.parse(raw)) : DEFAULT_SETTINGS);
         };
       });
     } catch {
       const raw = localStorage.getItem(LS_SETTINGS_KEY);
-      return raw ? { ...DEFAULT_SETTINGS, ...JSON.parse(raw) } : DEFAULT_SETTINGS;
+      return raw ? ensureTemplates(JSON.parse(raw)) : DEFAULT_SETTINGS;
     }
   },
 

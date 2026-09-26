@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
-import { TransmittalSettings, SignatoryLocationType } from '../types/transmittal';
-import { StorageService } from '../services/storageService';
+import React, { useState, useEffect } from 'react';
+import { TransmittalSettings, SignatoryLocationType, ItemTemplate, TransmittalItem } from '../types/transmittal';
+import { StorageService, DEFAULT_ITEM_TEMPLATES } from '../services/storageService';
 import {
   Settings,
   Building,
@@ -13,7 +13,13 @@ import {
   Download,
   Upload,
   RefreshCw,
-  FileSpreadsheet
+  FileSpreadsheet,
+  Layers,
+  Edit2,
+  RotateCcw,
+  FileCheck,
+  Package,
+  ArrowRight
 } from 'lucide-react';
 
 interface Props {
@@ -22,6 +28,7 @@ interface Props {
   onClose: () => void;
   onSave: (newSettings: TransmittalSettings) => Promise<void>;
   onRefreshData: () => Promise<void>;
+  initialTab?: 'company' | 'signatories' | 'templates' | 'data';
 }
 
 export const SettingsModal: React.FC<Props> = ({
@@ -29,15 +36,147 @@ export const SettingsModal: React.FC<Props> = ({
   isOpen,
   onClose,
   onSave,
-  onRefreshData
+  onRefreshData,
+  initialTab = 'company'
 }) => {
-  const [formData, setFormData] = useState<TransmittalSettings>({ ...settings });
-  const [activeTab, setActiveTab] = useState<'company' | 'signatories' | 'data'>('company');
+  const [formData, setFormData] = useState<TransmittalSettings>({
+    ...settings,
+    templates: settings.templates && settings.templates.length > 0 ? settings.templates : DEFAULT_ITEM_TEMPLATES
+  });
+  const [activeTab, setActiveTab] = useState<'company' | 'signatories' | 'templates' | 'data'>(initialTab);
   const [newQuickName, setNewQuickName] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
   const [msg, setMsg] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
+  // Template editing state
+  const [editingTemplate, setEditingTemplate] = useState<ItemTemplate | null>(null);
+  const [isNewTemplate, setIsNewTemplate] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (isOpen) {
+      setActiveTab(initialTab || 'company');
+      setFormData({
+        ...settings,
+        templates: settings.templates && settings.templates.length > 0 ? settings.templates : DEFAULT_ITEM_TEMPLATES
+      });
+    }
+  }, [isOpen, initialTab, settings]);
+
   if (!isOpen) return null;
+
+  const handleStartAddTemplate = () => {
+    setEditingTemplate({
+      id: 'tmpl-' + Date.now() + '-' + Math.random().toString(36).substring(2, 6),
+      label: '',
+      purpose: '',
+      items: [{ qty: 1, description: '' }]
+    });
+    setIsNewTemplate(true);
+  };
+
+  const handleStartEditTemplate = (tmpl: ItemTemplate) => {
+    setEditingTemplate({
+      ...tmpl,
+      items: tmpl.items.map((it) => ({ ...it }))
+    });
+    setIsNewTemplate(false);
+  };
+
+  const handleCancelEditTemplate = () => {
+    setEditingTemplate(null);
+  };
+
+  const handleSaveTemplate = () => {
+    if (!editingTemplate) return;
+    const trimmedLabel = editingTemplate.label.trim();
+    if (!trimmedLabel) {
+      alert('Template Name / Label is required.');
+      return;
+    }
+    const validItems = editingTemplate.items.filter((it) => it.description.trim().length > 0);
+    if (validItems.length === 0) {
+      alert('Please specify at least one valid item description for the template.');
+      return;
+    }
+
+    const templateToSave: ItemTemplate = {
+      ...editingTemplate,
+      label: trimmedLabel,
+      purpose: editingTemplate.purpose?.trim() || undefined,
+      items: validItems
+    };
+
+    setFormData((prev) => {
+      const currentList = prev.templates || DEFAULT_ITEM_TEMPLATES;
+      const index = currentList.findIndex((t) => t.id === templateToSave.id);
+      let updated: ItemTemplate[];
+      if (index >= 0) {
+        updated = [...currentList];
+        updated[index] = templateToSave;
+      } else {
+        updated = [...currentList, templateToSave];
+      }
+      return { ...prev, templates: updated };
+    });
+
+    setEditingTemplate(null);
+  };
+
+  const handleDeleteTemplate = (id: string) => {
+    if (!window.confirm('Are you sure you want to delete this template?')) return;
+    setFormData((prev) => {
+      const currentList = prev.templates || DEFAULT_ITEM_TEMPLATES;
+      return {
+        ...prev,
+        templates: currentList.filter((t) => t.id !== id)
+      };
+    });
+    if (editingTemplate?.id === id) {
+      setEditingTemplate(null);
+    }
+  };
+
+  const handleResetTemplates = () => {
+    if (window.confirm('Reset all templates to the factory default presets?')) {
+      setFormData((prev) => ({
+        ...prev,
+        templates: DEFAULT_ITEM_TEMPLATES
+      }));
+      setEditingTemplate(null);
+    }
+  };
+
+  const handleTemplateItemChange = (idx: number, field: keyof TransmittalItem, val: string | number) => {
+    if (!editingTemplate) return;
+    const newItems = [...editingTemplate.items];
+    if (field === 'qty') {
+      newItems[idx] = { ...newItems[idx], qty: Math.max(1, Number(val) || 1) };
+    } else {
+      newItems[idx] = { ...newItems[idx], description: String(val).toUpperCase() };
+    }
+    setEditingTemplate({ ...editingTemplate, items: newItems });
+  };
+
+  const handleAddTemplateItem = () => {
+    if (!editingTemplate) return;
+    setEditingTemplate({
+      ...editingTemplate,
+      items: [...editingTemplate.items, { qty: 1, description: '' }]
+    });
+  };
+
+  const handleRemoveTemplateItem = (idx: number) => {
+    if (!editingTemplate) return;
+    if (editingTemplate.items.length <= 1) {
+      setEditingTemplate({
+        ...editingTemplate,
+        items: [{ qty: 1, description: '' }]
+      });
+      return;
+    }
+    const newItems = editingTemplate.items.filter((_, i) => i !== idx);
+    setEditingTemplate({ ...editingTemplate, items: newItems });
+  };
 
   const handleAddQuickName = (e: React.FormEvent) => {
     e.preventDefault();

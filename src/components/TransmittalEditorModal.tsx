@@ -3,9 +3,10 @@ import {
   TransmittalForm,
   TransmittalSettings,
   TransmittalItem,
-  SignatoryLocationType
+  SignatoryLocationType,
+  ItemTemplate
 } from '../types/transmittal';
-import { StorageService } from '../services/storageService';
+import { StorageService, DEFAULT_ITEM_TEMPLATES } from '../services/storageService';
 import { compressAndFormatImage } from '../services/imageService';
 import {
   X,
@@ -53,41 +54,6 @@ const COMMON_DROPS = [
   'LBC Express Cargo',
   'J&T Express Courier',
   'Company Messenger'
-];
-
-const QUICK_ITEM_TEMPLATES: { label: string; items: TransmittalItem[] }[] = [
-  {
-    label: '+ Epson Ink 003 (BK/Y/C)',
-    items: [
-      { qty: 1, description: 'EPSON INK 003 (BK)' },
-      { qty: 1, description: 'EPSON INK 003 (Y)' },
-      { qty: 1, description: 'EPSON INK 003 (C)' }
-    ]
-  },
-  {
-    label: '+ POS Setup',
-    items: [
-      { qty: 1, description: 'Epson TM-T82III Thermal Receipt Printer (S/N: )' },
-      { qty: 1, description: 'Honeywell Handheld Barcode Scanner' },
-      { qty: 5, description: 'Thermal Paper Rolls 80mm' }
-    ]
-  },
-  {
-    label: '+ OR/CR Docs',
-    items: [
-      { qty: 5, description: 'Original LTO OR/CR documents (Motorcycle Units)' },
-      { qty: 5, description: 'Original Sales Invoice with Notarized Deed of Sale' },
-      { qty: 5, description: 'Ignition Duplicate Keys with barcode tags' }
-    ]
-  },
-  {
-    label: '+ Promo Pack',
-    items: [
-      { qty: 2, description: 'Roll-up Display Banner Standees (6ft x 2.5ft)' },
-      { qty: 300, description: 'Promo Marketing Brochures & Financing Guides' },
-      { qty: 15, description: 'Company Uniform Polo Shirts (M/L/XL)' }
-    ]
-  }
 ];
 
 export const TransmittalEditorModal: React.FC<Props> = ({
@@ -200,12 +166,24 @@ export const TransmittalEditorModal: React.FC<Props> = ({
     setFormData({ ...formData, items: updated });
   };
 
-  const applyItemTemplate = (items: TransmittalItem[]) => {
+  const availableTemplates = (settings.templates && settings.templates.length > 0)
+    ? settings.templates
+    : DEFAULT_ITEM_TEMPLATES;
+
+  const applyItemTemplate = (tmpl: ItemTemplate) => {
     // If only 1 empty row, replace it; else append
     if (formData.items.length === 1 && !formData.items[0].description) {
-      setFormData({ ...formData, items: [...items] });
+      setFormData({
+        ...formData,
+        items: tmpl.items.map((it) => ({ ...it })),
+        purpose: (!formData.purpose && tmpl.purpose) ? tmpl.purpose : formData.purpose
+      });
     } else {
-      setFormData({ ...formData, items: [...formData.items, ...items] });
+      setFormData({
+        ...formData,
+        items: [...formData.items, ...tmpl.items.map((it) => ({ ...it }))],
+        purpose: (!formData.purpose && tmpl.purpose) ? tmpl.purpose : formData.purpose
+      });
     }
   };
 
@@ -586,14 +564,14 @@ export const TransmittalEditorModal: React.FC<Props> = ({
               {/* Quick Template Chips */}
               <div className="flex items-center gap-1.5 flex-wrap">
                 <span className="text-[11px] font-semibold text-slate-500 mr-1">Templates:</span>
-                {QUICK_ITEM_TEMPLATES.map((tmpl, idx) => (
+                {availableTemplates.map((tmpl) => (
                   <button
-                    key={idx}
+                    key={tmpl.id}
                     type="button"
-                    onClick={() => applyItemTemplate(tmpl.items)}
+                    onClick={() => applyItemTemplate(tmpl)}
                     className="text-xs px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-md border border-slate-200 transition-colors cursor-pointer"
                   >
-                    {tmpl.label}
+                    + {tmpl.label}
                   </button>
                 ))}
               </div>
