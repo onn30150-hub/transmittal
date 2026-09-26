@@ -43,16 +43,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const handleSignIn = async () => {
     try {
       await signInWithGoogle();
-    } catch (err) {
-      console.error('Failed to sign in with Google', err);
+    } catch {
+      // Safe no-op
     }
   };
 
   const handleSignOut = async () => {
     try {
       await signOutUser();
-    } catch (err) {
-      console.error('Failed to sign out', err);
+    } catch {
+      // Safe no-op
     }
   };
 

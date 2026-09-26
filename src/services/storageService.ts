@@ -9,7 +9,6 @@ import {
   onSnapshot,
   Unsubscribe
 } from 'firebase/firestore';
-import { onAuthStateChanged, User } from 'firebase/auth';
 import { db, auth, handleFirestoreError, OperationType } from '../lib/firebase';
 
 const DB_NAME = 'TransmittalDB';
@@ -151,15 +150,13 @@ const SEED_FORMS: TransmittalForm[] = [
   }
 ];
 
-// Broadcast Channel for real-time multi-tab event communication
+// Broadcast Channel for multi-tab notification
 let broadcastChannel: BroadcastChannel | null = null;
 try {
   if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
     broadcastChannel = new BroadcastChannel('transmittal_system_channel');
   }
-} catch {
-  // Ignored if unavailable
-}
+} catch {}
 
 function notifySubscribers() {
   if (broadcastChannel) {
@@ -193,29 +190,46 @@ function openDB(): Promise<IDBDatabase> {
   });
 }
 
-// LocalStorage fallback wrappers
 const LS_FORMS_KEY = 'transmittal_forms_v1';
 const LS_SETTINGS_KEY = 'transmittal_settings_v1';
 const STORAGE_INITIALIZED_KEY = 'transmittal_app_seeded_v2';
 
+export function compareTransmittalsNewestFirst(a: TransmittalForm, b: TransmittalForm): number {
+  // 1. Primary: Compare calendar date (newer date comes first)
+  const dateA = new Date(a.date).getTime();
+  const dateB = new Date(b.date).getTime();
+  if (!isNaN(dateA) && !isNaN(dateB) && dateB !== dateA) {
+    return dateB - dateA;
+  }
+
+  // 2. Secondary: If dates match, compare createdAt timestamp (newer creation comes first)
+  const createdA = new Date(a.createdAt || a.date).getTime();
+  const createdB = new Date(b.createdAt || b.date).getTime();
+  if (!isNaN(createdA) && !isNaN(createdB) && createdB !== createdA) {
+    return createdB - createdA;
+  }
+
+  // 3. Tertiary: compare updatedAt if available
+  const updatedA = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+  const updatedB = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+  if (updatedB !== updatedA) {
+    return updatedB - updatedA;
+  }
+
+  // 4. Natural numeric fallback: compare Form Number descending (e.g., IT26-0182 before IT26-0181)
+  return (b.formNumber || '').localeCompare(a.formNumber || '', undefined, {
+    numeric: true,
+    sensitivity: 'base'
+  });
+}
+
 function getFormsFromLocalStorage(): TransmittalForm[] {
   try {
     const raw = localStorage.getItem(LS_FORMS_KEY);
-    const hasInitialized = localStorage.getItem(STORAGE_INITIALIZED_KEY) === 'true';
-
-    // If completely first run (never initialized and no data in storage)
-    if (raw === null) {
-      if (!hasInitialized) {
-        localStorage.setItem(STORAGE_INITIALIZED_KEY, 'true');
-        localStorage.setItem(LS_FORMS_KEY, JSON.stringify(SEED_FORMS));
-        return SEED_FORMS;
-      }
-      return [];
-    }
-
+    if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) {
-      return parsed;
+      return parsed.sort(compareTransmittalsNewestFirst);
     }
     return [];
   } catch {
@@ -225,137 +239,129 @@ function getFormsFromLocalStorage(): TransmittalForm[] {
 
 function saveFormsToLocalStorage(forms: TransmittalForm[]) {
   try {
+    const sorted = [...forms].sort(compareTransmittalsNewestFirst);
     localStorage.setItem(STORAGE_INITIALIZED_KEY, 'true');
-    localStorage.setItem(LS_FORMS_KEY, JSON.stringify(forms));
+    localStorage.setItem(LS_FORMS_KEY, JSON.stringify(sorted));
   } catch (err) {
     console.warn('LocalStorage save failed:', err);
   }
 }
 
-// Realtime Firestore listeners
+// Real-time Firestore Listeners - Always Active for All Users
 let transmittalsUnsubscribe: Unsubscribe | null = null;
 let settingsUnsubscribe: Unsubscribe | null = null;
+let isRealtimeListening = false;
 
-function setupFirestoreListeners(user: User) {
-  // Teardown previous listeners if any
-  if (transmittalsUnsubscribe) {
-    transmittalsUnsubscribe();
-    transmittalsUnsubscribe = null;
-  }
-  if (settingsUnsubscribe) {
-    settingsUnsubscribe();
-    settingsUnsubscribe = null;
-  }
+function setupFirestoreListeners() {
+  if (isRealtimeListening) return;
+  isRealtimeListening = true;
 
-  // 1. Transmittals collection listener
-  const transmittalsColl = collection(db, 'transmittals');
-  transmittalsUnsubscribe = onSnapshot(
-    transmittalsColl,
-    (snapshot) => {
-      const forms: TransmittalForm[] = [];
-      snapshot.forEach((docSnap) => {
-        forms.push(docSnap.data() as TransmittalForm);
-      });
+  try {
+    // 1. Transmittals collection real-time listener (all users share this live)
+    const transmittalsColl = collection(db, 'transmittals');
+    transmittalsUnsubscribe = onSnapshot(
+      transmittalsColl,
+      (snapshot) => {
+        const forms: TransmittalForm[] = [];
+        snapshot.forEach((docSnap) => {
+          forms.push(docSnap.data() as TransmittalForm);
+        });
 
-      if (forms.length > 0) {
+        forms.sort(compareTransmittalsNewestFirst);
+
         saveFormsToLocalStorage(forms);
-        // Sync to IndexedDB
-        openDB().then((idb) => {
-          const tx = idb.transaction(FORMS_STORE, 'readwrite');
-          const store = tx.objectStore(FORMS_STORE);
-          forms.forEach((f) => store.put(f));
-        }).catch(() => {});
-        notifySubscribers();
-      } else {
-        // If Firestore collection was emptied, update local mirrors to empty as well
-        saveFormsToLocalStorage([]);
-        openDB().then((idb) => {
-          const tx = idb.transaction(FORMS_STORE, 'readwrite');
-          tx.objectStore(FORMS_STORE).clear();
-        }).catch(() => {});
-        notifySubscribers();
-      }
-    },
-    (error) => {
-      handleFirestoreError(error, OperationType.GET, 'transmittals');
-    }
-  );
 
-  // 2. Settings document listener
-  const settingsDocRef = doc(db, 'settings', 'main_settings');
-  settingsUnsubscribe = onSnapshot(
-    settingsDocRef,
-    (snap) => {
-      if (snap.exists()) {
-        const remoteSettings = snap.data() as TransmittalSettings;
-        localStorage.setItem(LS_SETTINGS_KEY, JSON.stringify(remoteSettings));
-        openDB().then((idb) => {
-          const tx = idb.transaction(SETTINGS_STORE, 'readwrite');
-          tx.objectStore(SETTINGS_STORE).put({ key: 'main_settings', data: remoteSettings });
-        }).catch(() => {});
+        // Mirror to IndexedDB
+        openDB()
+          .then((idb) => {
+            const tx = idb.transaction(FORMS_STORE, 'readwrite');
+            const store = tx.objectStore(FORMS_STORE);
+            store.clear();
+            forms.forEach((f) => store.put(f));
+          })
+          .catch(() => {});
+
         notifySubscribers();
-      } else {
-        // Seed default settings to Firestore
-        setDoc(settingsDocRef, {
-          ...DEFAULT_SETTINGS,
-          updatedAt: new Date().toISOString()
-        }).catch(() => {});
+      },
+      (error) => {
+        console.warn('Real-time transmittals sync warning:', error);
       }
-    },
-    (error) => {
-      handleFirestoreError(error, OperationType.GET, 'settings/main_settings');
-    }
-  );
+    );
+
+    // 2. Settings document real-time listener
+    const settingsDocRef = doc(db, 'settings', 'main_settings');
+    settingsUnsubscribe = onSnapshot(
+      settingsDocRef,
+      (snap) => {
+        if (snap.exists()) {
+          const remoteSettings = snap.data() as TransmittalSettings;
+          localStorage.setItem(LS_SETTINGS_KEY, JSON.stringify(remoteSettings));
+          openDB()
+            .then((idb) => {
+              const tx = idb.transaction(SETTINGS_STORE, 'readwrite');
+              tx.objectStore(SETTINGS_STORE).put({ key: 'main_settings', data: remoteSettings });
+            })
+            .catch(() => {});
+          notifySubscribers();
+        }
+      },
+      (error) => {
+        console.warn('Real-time settings sync warning:', error);
+      }
+    );
+  } catch (err) {
+    console.warn('Could not initialize realtime Firestore listeners:', err);
+  }
 }
 
-// Watch auth state to activate/deactivate Firestore real-time synchronization
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    setupFirestoreListeners(user);
-  } else {
-    if (transmittalsUnsubscribe) {
-      transmittalsUnsubscribe();
-      transmittalsUnsubscribe = null;
-    }
-    if (settingsUnsubscribe) {
-      settingsUnsubscribe();
-      settingsUnsubscribe = null;
-    }
-  }
-});
+// Start listeners immediately upon script load
+setupFirestoreListeners();
 
 export const StorageService = {
   async init(): Promise<void> {
+    setupFirestoreListeners();
+
     try {
-      const hasInitialized = localStorage.getItem(STORAGE_INITIALIZED_KEY) === 'true';
-      if (!hasInitialized) {
-        localStorage.setItem(STORAGE_INITIALIZED_KEY, 'true');
-        for (const form of SEED_FORMS) {
-          await this.saveTransmittal(form);
+      // Check if Firestore already has records
+      const snap = await getDocs(collection(db, 'transmittals'));
+      if (snap.empty) {
+        // If the shared Firebase database is completely fresh, seed default records once
+        const hasLocal = localStorage.getItem(STORAGE_INITIALIZED_KEY) === 'true';
+        if (!hasLocal) {
+          localStorage.setItem(STORAGE_INITIALIZED_KEY, 'true');
+          for (const form of SEED_FORMS) {
+            await this.saveTransmittal(form);
+          }
         }
+      } else {
+        // Hydrate local cache from live Firestore
+        const forms: TransmittalForm[] = [];
+        snap.forEach((d) => forms.push(d.data() as TransmittalForm));
+        forms.sort(compareTransmittalsNewestFirst);
+        saveFormsToLocalStorage(forms);
       }
-      const settings = await this.getSettings();
-      if (!settings || !settings.companyName) {
+
+      // Ensure settings exist in Firestore
+      const settingsSnap = await getDoc(doc(db, 'settings', 'main_settings'));
+      if (!settingsSnap.exists()) {
         await this.saveSettings(DEFAULT_SETTINGS);
       }
-    } catch {
-      // Fallback already initializes default in catch blocks
+    } catch (err) {
+      console.warn('Initial Firebase sync check failed, operating with local cache:', err);
     }
   },
 
   async getTransmittals(): Promise<TransmittalForm[]> {
-    // If user is logged in, try direct Firestore fetch first if needed
-    if (auth.currentUser) {
-      try {
-        const snap = await getDocs(collection(db, 'transmittals'));
-        const forms: TransmittalForm[] = [];
-        snap.forEach((d) => forms.push(d.data() as TransmittalForm));
-        forms.sort((a, b) => new Date(b.date || b.createdAt).getTime() - new Date(a.date || a.createdAt).getTime());
-        saveFormsToLocalStorage(forms);
-        return forms;
-      } catch {
-        // Fallback to local
-      }
+    // 1. Try Live Firestore First (Guarantees every user sees the latest synchronized version)
+    try {
+      const snap = await getDocs(collection(db, 'transmittals'));
+      const forms: TransmittalForm[] = [];
+      snap.forEach((d) => forms.push(d.data() as TransmittalForm));
+      forms.sort(compareTransmittalsNewestFirst);
+      saveFormsToLocalStorage(forms);
+      return forms;
+    } catch {
+      // Offline fallback: Use IndexedDB then LocalStorage
     }
 
     try {
@@ -366,10 +372,10 @@ export const StorageService = {
         const req = store.getAll();
         req.onsuccess = () => {
           let forms = req.result as TransmittalForm[];
-          if (!forms) {
+          if (!forms || forms.length === 0) {
             forms = getFormsFromLocalStorage();
           }
-          forms.sort((a, b) => new Date(b.date || b.createdAt).getTime() - new Date(a.date || a.createdAt).getTime());
+          forms.sort(compareTransmittalsNewestFirst);
           resolve(forms);
         };
         req.onerror = () => {
@@ -382,59 +388,56 @@ export const StorageService = {
   },
 
   async getTransmittal(id: string): Promise<TransmittalForm | null> {
-    if (auth.currentUser) {
-      try {
-        const docSnap = await getDoc(doc(db, 'transmittals', id));
-        if (docSnap.exists()) {
-          return docSnap.data() as TransmittalForm;
-        }
-      } catch {
-        // fallback
-      }
-    }
-
     try {
-      const dbInstance = await openDB();
-      return new Promise((resolve) => {
-        const tx = dbInstance.transaction(FORMS_STORE, 'readonly');
-        const store = tx.objectStore(FORMS_STORE);
-        const req = store.get(id);
-        req.onsuccess = () => {
-          if (req.result) resolve(req.result);
-          else {
-            const all = getFormsFromLocalStorage();
-            resolve(all.find((f) => f.id === id) || null);
-          }
-        };
-        req.onerror = () => {
-          const all = getFormsFromLocalStorage();
-          resolve(all.find((f) => f.id === id) || null);
-        };
-      });
-    } catch {
-      const all = getFormsFromLocalStorage();
-      return all.find((f) => f.id === id) || null;
-    }
+      const docSnap = await getDoc(doc(db, 'transmittals', id));
+      if (docSnap.exists()) {
+        return docSnap.data() as TransmittalForm;
+      }
+    } catch {}
+
+    const all = await this.getTransmittals();
+    return all.find((f) => f.id === id) || null;
   },
 
   async saveTransmittal(form: TransmittalForm): Promise<TransmittalForm> {
     const updatedForm: TransmittalForm = {
       ...form,
-      updatedAt: new Date().toISOString(),
-      createdAt: form.createdAt || new Date().toISOString()
+      createdAt: form.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString()
     };
 
-    // 1. Save to LocalStorage
+    // 1. Save directly to shared Firebase Firestore
+    const path = `transmittals/${updatedForm.id}`;
+    try {
+      const payload: Record<string, any> = {
+        ...updatedForm,
+        authorId: updatedForm.authorId || auth.currentUser?.uid || 'user',
+        authorEmail: updatedForm.authorEmail || auth.currentUser?.email || ''
+      };
+
+      // Clean undefined properties
+      Object.keys(payload).forEach((key) => {
+        if (payload[key] === undefined) {
+          delete payload[key];
+        }
+      });
+
+      await setDoc(doc(db, 'transmittals', updatedForm.id), payload);
+    } catch (err) {
+      console.warn('Direct Firestore save failed, saving to local cache:', err);
+    }
+
+    // 2. Mirror into LocalStorage
     const localForms = getFormsFromLocalStorage();
-    const existingIndex = localForms.findIndex((f) => f.id === updatedForm.id);
-    if (existingIndex >= 0) {
-      localForms[existingIndex] = updatedForm;
+    const existingIdx = localForms.findIndex((f) => f.id === updatedForm.id);
+    if (existingIdx >= 0) {
+      localForms[existingIdx] = updatedForm;
     } else {
       localForms.unshift(updatedForm);
     }
     saveFormsToLocalStorage(localForms);
 
-    // 2. Save to IndexedDB
+    // 3. Mirror into IndexedDB
     try {
       const dbInstance = await openDB();
       await new Promise<void>((resolve, reject) => {
@@ -445,28 +448,7 @@ export const StorageService = {
         req.onerror = () => reject(req.error);
       });
     } catch (err) {
-      console.warn('Could not save to IndexedDB, fallback stored in LocalStorage', err);
-    }
-
-    // 3. Save to Firestore if authenticated
-    if (auth.currentUser) {
-      const path = `transmittals/${updatedForm.id}`;
-      try {
-        const payload: Record<string, any> = {
-          ...updatedForm,
-          authorId: updatedForm.authorId || auth.currentUser.uid,
-          authorEmail: updatedForm.authorEmail || auth.currentUser.email || ''
-        };
-        // Clean undefined properties before saving to Firestore
-        Object.keys(payload).forEach((key) => {
-          if (payload[key] === undefined) {
-            delete payload[key];
-          }
-        });
-        await setDoc(doc(db, 'transmittals', updatedForm.id), payload);
-      } catch (err) {
-        handleFirestoreError(err, OperationType.WRITE, path);
-      }
+      console.warn('Could not save to IndexedDB', err);
     }
 
     notifySubscribers();
@@ -474,11 +456,18 @@ export const StorageService = {
   },
 
   async deleteTransmittal(id: string): Promise<void> {
-    // 1. Remove from LocalStorage
+    // 1. Delete from shared Firebase Firestore
+    try {
+      await deleteDoc(doc(db, 'transmittals', id));
+    } catch (err) {
+      console.warn('Direct Firestore delete failed:', err);
+    }
+
+    // 2. Remove from LocalStorage
     const localForms = getFormsFromLocalStorage().filter((f) => f.id !== id);
     saveFormsToLocalStorage(localForms);
 
-    // 2. Remove from IndexedDB
+    // 3. Remove from IndexedDB
     try {
       const dbInstance = await openDB();
       await new Promise<void>((resolve, reject) => {
@@ -492,31 +481,17 @@ export const StorageService = {
       console.warn('Failed to delete from IndexedDB', err);
     }
 
-    // 3. Delete from Firestore if authenticated
-    if (auth.currentUser) {
-      const path = `transmittals/${id}`;
-      try {
-        await deleteDoc(doc(db, 'transmittals', id));
-      } catch (err) {
-        handleFirestoreError(err, OperationType.DELETE, path);
-      }
-    }
-
     notifySubscribers();
   },
 
   async getSettings(): Promise<TransmittalSettings> {
-    if (auth.currentUser) {
-      try {
-        const snap = await getDoc(doc(db, 'settings', 'main_settings'));
-        if (snap.exists()) {
-          const remoteSettings = snap.data() as TransmittalSettings;
-          return { ...DEFAULT_SETTINGS, ...remoteSettings };
-        }
-      } catch {
-        // fallback to local
+    try {
+      const snap = await getDoc(doc(db, 'settings', 'main_settings'));
+      if (snap.exists()) {
+        const remoteSettings = snap.data() as TransmittalSettings;
+        return { ...DEFAULT_SETTINGS, ...remoteSettings };
       }
-    }
+    } catch {}
 
     try {
       const dbInstance = await openDB();
@@ -561,20 +536,18 @@ export const StorageService = {
       console.warn('Failed to save settings to IndexedDB', err);
     }
 
-    if (auth.currentUser) {
-      const path = 'settings/main_settings';
-      try {
-        const payload: Record<string, any> = {
-          ...settings,
-          updatedAt: new Date().toISOString()
-        };
-        Object.keys(payload).forEach((k) => {
-          if (payload[k] === undefined) delete payload[k];
-        });
-        await setDoc(doc(db, 'settings', 'main_settings'), payload);
-      } catch (err) {
-        handleFirestoreError(err, OperationType.WRITE, path);
-      }
+    // Save directly to shared Firestore
+    try {
+      const payload: Record<string, any> = {
+        ...settings,
+        updatedAt: new Date().toISOString()
+      };
+      Object.keys(payload).forEach((k) => {
+        if (payload[k] === undefined) delete payload[k];
+      });
+      await setDoc(doc(db, 'settings', 'main_settings'), payload);
+    } catch (err) {
+      console.warn('Direct Firestore save settings failed:', err);
     }
 
     notifySubscribers();
@@ -583,8 +556,8 @@ export const StorageService = {
 
   async generateNextFormNumber(locationType: SignatoryLocationType = 'HO'): Promise<string> {
     const forms = await this.getTransmittals();
-    const currentYear = new Date().getFullYear().toString().slice(-2); // "26" for 2026
-    const prefix = `${locationType}${currentYear}-`; // e.g. "HO26-"
+    const currentYear = new Date().getFullYear().toString().slice(-2);
+    const prefix = `${locationType}${currentYear}-`;
 
     let maxNumber = 0;
     forms.forEach((f) => {

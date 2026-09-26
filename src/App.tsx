@@ -6,7 +6,7 @@ import {
   SignatoryLocationType,
   PrintMode
 } from './types/transmittal';
-import { StorageService } from './services/storageService';
+import { StorageService, compareTransmittalsNewestFirst } from './services/storageService';
 import { Navbar } from './components/Navbar';
 import { StatsAndFilters } from './components/StatsAndFilters';
 import { TransmittalList } from './components/TransmittalList';
@@ -88,9 +88,9 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  // Filtered forms calculation
+  // Filtered forms calculation (guaranteed sorted from newer to older)
   const filteredForms = useMemo(() => {
-    return forms.filter((f) => {
+    const list = forms.filter((f) => {
       // Search query (form number, recipient, purpose, dropTo, items)
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
@@ -117,6 +117,8 @@ export default function App() {
 
       return true;
     });
+
+    return [...list].sort(compareTransmittalsNewestFirst);
   }, [forms, searchQuery, filters]);
 
   // Handlers

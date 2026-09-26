@@ -286,7 +286,7 @@ export const TransmittalEditorModal: React.FC<Props> = ({
 
         {/* Scrollable Form Body */}
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* Section 1: Document Parameters */}
+          {/* Section 1: Details */}
           <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-4">
             <div className="flex items-center justify-between">
               <h4 className="text-xs font-black uppercase tracking-wider text-slate-700 flex items-center gap-1.5">
@@ -408,109 +408,7 @@ export const TransmittalEditorModal: React.FC<Props> = ({
             </div>
           </div>
 
-          {/* Section 2: Items Table */}
-          <div className="border border-slate-200 rounded-xl p-4 bg-white shadow-2xs space-y-3">
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div>
-                <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
-                  <FileCheck className="w-4 h-4 text-emerald-600" /> Items ({formData.items.length})
-                </h4>
-              </div>
-
-              {/* Quick Template Chips */}
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[11px] font-semibold text-slate-500 mr-1">Templates:</span>
-                {QUICK_ITEM_TEMPLATES.map((tmpl, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => applyItemTemplate(tmpl.items)}
-                    className="text-xs px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-md border border-slate-200 transition-colors cursor-pointer"
-                  >
-                    {tmpl.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Table */}
-            <div className="border border-slate-300 rounded-lg overflow-hidden">
-              <table className="w-full text-left border-collapse text-xs">
-                <thead className="bg-slate-100 border-b border-slate-300 font-bold uppercase text-slate-600">
-                  <tr>
-                    <th className="py-2 px-3 w-12 text-center">#</th>
-                    <th className="py-2 px-3 w-24 text-center">Qty</th>
-                    <th className="py-2 px-3">Description &amp; Serial Number</th>
-                    <th className="py-2 px-3 w-14 text-center">Action</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200">
-                  {formData.items.map((item, index) => (
-                    <tr key={index} className="hover:bg-slate-50/70">
-                      <td className="py-2 px-3 text-center font-bold text-slate-400">
-                        {index + 1}
-                      </td>
-                      <td className="py-2 px-3">
-                        <input
-                          type="number"
-                          min="1"
-                          max="9999"
-                          value={item.qty}
-                          onChange={(e) => handleItemChange(index, 'qty', e.target.value)}
-                          className="w-full text-center py-1 px-2 border border-slate-300 rounded text-xs font-bold focus:ring-1 focus:ring-red-500"
-                          required
-                        />
-                      </td>
-                      <td className="py-2 px-3">
-                        <input
-                          type="text"
-                          value={item.description}
-                          onChange={(e) => handleItemChange(index, 'description', e.target.value)}
-                          placeholder="Item name / serial number"
-                          className="w-full py-1 px-2 border border-slate-300 rounded text-xs focus:ring-1 focus:ring-red-500"
-                          required
-                        />
-                      </td>
-                      <td className="py-2 px-3 text-center">
-                        <button
-                          type="button"
-                          onClick={() => handleRemoveItem(index)}
-                          className="p-1 text-slate-400 hover:text-red-600 rounded hover:bg-red-50 transition-colors"
-                          title="Remove item"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleAddItem}
-              className="w-full py-2 border-2 border-dashed border-slate-300 hover:border-slate-400 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-800 flex items-center justify-center gap-1.5 bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer"
-            >
-              <Plus className="w-4 h-4" /> Add Item
-            </button>
-          </div>
-
-          {/* Section 3: Remarks */}
-          <div>
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-              Remarks
-            </label>
-            <textarea
-              rows={2}
-              value={formData.remarks}
-              onChange={(e) => setFormData({ ...formData, remarks: e.target.value })}
-              placeholder="Optional notes or instructions..."
-              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-red-500"
-            />
-          </div>
-
-          {/* Section 4: 4 Signatory Blocks */}
+          {/* Section 2: Signatories */}
           <div className="border border-slate-200 rounded-xl p-4 bg-slate-50 space-y-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div>
@@ -688,6 +586,108 @@ export const TransmittalEditorModal: React.FC<Props> = ({
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Section 3: Items */}
+          <div className="border border-slate-200 rounded-xl p-4 bg-white shadow-2xs space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <div>
+                <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                  <FileCheck className="w-4 h-4 text-emerald-600" /> Items ({formData.items.length})
+                </h4>
+              </div>
+
+              {/* Quick Template Chips */}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[11px] font-semibold text-slate-500 mr-1">Templates:</span>
+                {QUICK_ITEM_TEMPLATES.map((tmpl, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => applyItemTemplate(tmpl.items)}
+                    className="text-xs px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium rounded-md border border-slate-200 transition-colors cursor-pointer"
+                  >
+                    {tmpl.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Table */}
+            <div className="border border-slate-300 rounded-lg overflow-hidden">
+              <table className="w-full text-left border-collapse text-xs">
+                <thead className="bg-slate-100 border-b border-slate-300 font-bold uppercase text-slate-600">
+                  <tr>
+                    <th className="py-2 px-3 w-12 text-center">#</th>
+                    <th className="py-2 px-3 w-24 text-center">Qty</th>
+                    <th className="py-2 px-3">Description &amp; Serial Number</th>
+                    <th className="py-2 px-3 w-14 text-center">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200">
+                  {formData.items.map((item, index) => (
+                    <tr key={index} className="hover:bg-slate-50/70">
+                      <td className="py-2 px-3 text-center font-bold text-slate-400">
+                        {index + 1}
+                      </td>
+                      <td className="py-2 px-3">
+                        <input
+                          type="number"
+                          min="1"
+                          max="9999"
+                          value={item.qty}
+                          onChange={(e) => handleItemChange(index, 'qty', e.target.value)}
+                          className="w-full text-center py-1 px-2 border border-slate-300 rounded text-xs font-bold focus:ring-1 focus:ring-red-500"
+                          required
+                        />
+                      </td>
+                      <td className="py-2 px-3">
+                        <input
+                          type="text"
+                          value={item.description}
+                          onChange={(e) => handleItemChange(index, 'description', e.target.value)}
+                          placeholder="Item name / serial number"
+                          className="w-full py-1 px-2 border border-slate-300 rounded text-xs focus:ring-1 focus:ring-red-500"
+                          required
+                        />
+                      </td>
+                      <td className="py-2 px-3 text-center">
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveItem(index)}
+                          className="p-1 text-slate-400 hover:text-red-600 rounded hover:bg-red-50 transition-colors"
+                          title="Remove item"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            <button
+              type="button"
+              onClick={handleAddItem}
+              className="w-full py-2 border-2 border-dashed border-slate-300 hover:border-slate-400 rounded-lg text-xs font-bold text-slate-600 hover:text-slate-800 flex items-center justify-center gap-1.5 bg-slate-50 hover:bg-slate-100 transition-colors cursor-pointer"
+            >
+              <Plus className="w-4 h-4" /> Add Item
+            </button>
+          </div>
+
+          {/* Section 4: Remarks */}
+          <div>
+            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+              Remarks
+            </label>
+            <textarea
+              rows={2}
+              value={formData.remarks}
+              onChange={(e) => setFormData({ ...formData, remarks: e.target.value })}
+              placeholder="Optional notes or instructions..."
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-red-500"
+            />
           </div>
 
           {/* Section 5: Delivery Status & Physical Proof */}

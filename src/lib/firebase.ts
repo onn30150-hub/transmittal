@@ -72,17 +72,20 @@ export async function testConnection(): Promise<boolean> {
 export async function signInWithGoogle() {
   try {
     return await signInWithPopup(auth, googleProvider);
-  } catch (error) {
-    console.error("Google sign-in error:", error);
-    throw error;
+  } catch (error: any) {
+    if (error?.code === 'auth/popup-closed-by-user' || error?.code === 'auth/cancelled-popup-request') {
+      return null;
+    }
+    console.warn("Google sign-in:", error?.message || error);
+    return null;
   }
 }
 
 export async function signOutUser() {
   try {
     return await fbSignOut(auth);
-  } catch (error) {
-    console.error("Sign out error:", error);
-    throw error;
+  } catch (error: any) {
+    console.warn("Sign out:", error?.message || error);
+    return null;
   }
 }

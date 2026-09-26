@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { TransmittalForm, TransmittalSettings } from '../types/transmittal';
+import { compareTransmittalsNewestFirst } from '../services/storageService';
 import {
   Printer,
   Edit,
@@ -51,8 +52,12 @@ export const TransmittalList: React.FC<Props> = ({
   onViewHardCopy,
   onNewTransmittal
 }) => {
+  const sortedForms = useMemo(() => {
+    return [...forms].sort(compareTransmittalsNewestFirst);
+  }, [forms]);
+
   // Empty State
-  if (forms.length === 0) {
+  if (sortedForms.length === 0) {
     return (
       <div className="bg-white rounded-2xl border border-slate-200/80 p-12 text-center max-w-md mx-auto my-10 shadow-sm no-print">
         <div className="w-12 h-12 bg-slate-100 text-slate-400 rounded-xl flex items-center justify-center mx-auto mb-4">
@@ -129,7 +134,7 @@ export const TransmittalList: React.FC<Props> = ({
       {/* Cards View */}
       {viewMode === 'cards' ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5 sm:gap-4">
-          {forms.map((form) => {
+          {sortedForms.map((form) => {
             const isCompleted = Boolean(form.completeDelivery);
             const hasHardCopy = Boolean(form.hardCopyUrl);
             const isSelected = selectedIds.includes(form.id);
@@ -328,7 +333,7 @@ export const TransmittalList: React.FC<Props> = ({
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
-                {forms.map((form) => {
+                {sortedForms.map((form) => {
                   const isCompleted = Boolean(form.completeDelivery);
                   const hasHardCopy = Boolean(form.hardCopyUrl);
                   const isSelected = selectedIds.includes(form.id);

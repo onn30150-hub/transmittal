@@ -37,7 +37,9 @@ service cloud.firestore {
         && (!('remarks' in data) || (data.remarks is string && data.remarks.size() <= 2000))
         && (!('dropTo' in data) || (data.dropTo is string && data.dropTo.size() <= 128))
         && (!('branchName' in data) || (data.branchName is string && data.branchName.size() <= 128))
-        && (!('authorId' in data) || (data.authorId is string && data.authorId == request.auth.uid));
+        && (!('authorId' in data) || (data.authorId is string && data.authorId.size() <= 128))
+        && (!('authorEmail' in data) || (data.authorEmail is string && data.authorEmail.size() <= 128))
+        && (!('hardCopyUrl' in data) || (data.hardCopyUrl is string && data.hardCopyUrl.size() <= 500000));
     }
 
     // 4. Entity Validation Helper for Settings
@@ -49,31 +51,27 @@ service cloud.firestore {
         && (!('companyLogoUrl' in data) || (data.companyLogoUrl is string && data.companyLogoUrl.size() <= 100000));
     }
 
-    // 5. Transmittal Records Collection
+    // 5. Transmittal Records Collection (Shared Multi-User Database)
     match /transmittals/{transmittalId} {
-      allow read: if isSignedIn();
+      allow read: if true;
 
-      allow create: if isSignedIn()
-        && isValidId(transmittalId)
+      allow create: if isValidId(transmittalId)
         && incoming().id == transmittalId
         && isValidTransmittal(incoming());
 
-      allow update: if isSignedIn()
-        && isValidId(transmittalId)
+      allow update: if isValidId(transmittalId)
         && isValidTransmittal(incoming())
         && incoming().id == existing().id
         && incoming().formNumber == existing().formNumber;
 
-      allow delete: if isSignedIn()
-        && isValidId(transmittalId);
+      allow delete: if isValidId(transmittalId);
     }
 
     // 6. Application & Company Settings
     match /settings/{settingId} {
-      allow read: if isSignedIn();
+      allow read: if true;
 
-      allow create, update: if isSignedIn()
-        && isValidId(settingId)
+      allow create, update: if isValidId(settingId)
         && isValidSettings(incoming());
 
       allow delete: if false;
