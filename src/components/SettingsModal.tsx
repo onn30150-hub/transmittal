@@ -254,7 +254,7 @@ export const SettingsModal: React.FC<Props> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm p-4 overflow-y-auto no-print">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full flex flex-col max-h-[90vh] border border-slate-200 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full flex flex-col max-h-[92vh] border border-slate-200 overflow-hidden">
         {/* Header */}
         <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
           <div className="flex items-center gap-3">
@@ -262,22 +262,24 @@ export const SettingsModal: React.FC<Props> = ({
               <Settings className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-slate-900">Settings</h3>
+              <h3 className="text-lg font-bold text-slate-900">Settings &amp; Presets</h3>
+              <p className="text-xs text-slate-500">Company defaults, signatories, item templates, and data backups</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 p-2 rounded-lg hover:bg-slate-200/60"
+            className="text-slate-400 hover:text-slate-600 p-2 rounded-lg hover:bg-slate-200/60 transition-colors"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex border-b border-slate-200 px-6 bg-white gap-2">
+        <div className="flex border-b border-slate-200 px-6 bg-white gap-2 overflow-x-auto">
           <button
+            type="button"
             onClick={() => setActiveTab('company')}
-            className={`py-3 px-4 font-semibold text-sm flex items-center gap-2 border-b-2 cursor-pointer transition-all ${
+            className={`py-3 px-4 font-semibold text-sm flex items-center gap-2 border-b-2 cursor-pointer transition-all whitespace-nowrap ${
               activeTab === 'company'
                 ? 'border-red-600 text-red-600'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -286,8 +288,9 @@ export const SettingsModal: React.FC<Props> = ({
             <Building className="w-4 h-4" /> Company
           </button>
           <button
+            type="button"
             onClick={() => setActiveTab('signatories')}
-            className={`py-3 px-4 font-semibold text-sm flex items-center gap-2 border-b-2 cursor-pointer transition-all ${
+            className={`py-3 px-4 font-semibold text-sm flex items-center gap-2 border-b-2 cursor-pointer transition-all whitespace-nowrap ${
               activeTab === 'signatories'
                 ? 'border-red-600 text-red-600'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -296,8 +299,23 @@ export const SettingsModal: React.FC<Props> = ({
             <Users className="w-4 h-4" /> Signatories
           </button>
           <button
+            type="button"
+            onClick={() => setActiveTab('templates')}
+            className={`py-3 px-4 font-semibold text-sm flex items-center gap-2 border-b-2 cursor-pointer transition-all whitespace-nowrap ${
+              activeTab === 'templates'
+                ? 'border-red-600 text-red-600'
+                : 'border-transparent text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <Layers className="w-4 h-4" /> Templates
+            <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-red-100 text-red-700">
+              {(formData.templates || DEFAULT_ITEM_TEMPLATES).length}
+            </span>
+          </button>
+          <button
+            type="button"
             onClick={() => setActiveTab('data')}
-            className={`py-3 px-4 font-semibold text-sm flex items-center gap-2 border-b-2 cursor-pointer transition-all ${
+            className={`py-3 px-4 font-semibold text-sm flex items-center gap-2 border-b-2 cursor-pointer transition-all whitespace-nowrap ${
               activeTab === 'data'
                 ? 'border-red-600 text-red-600'
                 : 'border-transparent text-slate-500 hover:text-slate-800'
@@ -480,6 +498,257 @@ export const SettingsModal: React.FC<Props> = ({
                   ))}
                 </div>
               </div>
+            </div>
+          )}
+
+          {activeTab === 'templates' && (
+            <div className="space-y-4">
+              {editingTemplate ? (
+                /* Template Editor View */
+                <div className="bg-slate-50 border border-slate-300 rounded-xl p-4 sm:p-5 space-y-4 animate-in fade-in duration-150">
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-200">
+                    <div className="flex items-center gap-2">
+                      <div className="w-7 h-7 rounded-lg bg-red-600 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-slate-900">
+                          {isNewTemplate ? 'Create New Item Template' : `Edit Template: ${editingTemplate.label}`}
+                        </h4>
+                        <p className="text-[11px] text-slate-500">Define the button name and default items package</p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleCancelEditTemplate}
+                      className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-200/60 transition-colors"
+                      title="Cancel editing"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                        Template Name / Button Label <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={editingTemplate.label}
+                        onChange={(e) => setEditingTemplate({ ...editingTemplate, label: e.target.value })}
+                        placeholder="e.g. Epson Ink 003 or POS Setup"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs font-semibold bg-white focus:outline-none focus:ring-2 focus:ring-red-500"
+                        required
+                      />
+                      <span className="text-[10px] text-slate-500 mt-1 block">
+                        This text appears on the template button in the new transmittal form.
+                      </span>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
+                        Default Purpose (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        value={editingTemplate.purpose || ''}
+                        onChange={(e) => setEditingTemplate({ ...editingTemplate, purpose: e.target.value.toUpperCase() })}
+                        placeholder="e.g. PRINTER INK SUPPLIES"
+                        className="w-full px-3 py-2 border border-slate-300 rounded-lg text-xs bg-white uppercase focus:outline-none focus:ring-2 focus:ring-red-500"
+                      />
+                      <span className="text-[10px] text-slate-500 mt-1 block">
+                        Optional preset purpose automatically filled when applied.
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Template Items Table */}
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                        <Package className="w-3.5 h-3.5 text-slate-500" /> Template Items ({editingTemplate.items.length})
+                      </label>
+                      <button
+                        type="button"
+                        onClick={handleAddTemplateItem}
+                        className="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-700 rounded-md text-xs font-semibold border border-slate-300 flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+                      >
+                        <Plus className="w-3 h-3 text-red-600" /> Add Item Row
+                      </button>
+                    </div>
+
+                    <div className="border border-slate-300 rounded-lg overflow-hidden bg-white shadow-2xs">
+                      <table className="w-full text-left border-collapse text-xs">
+                        <thead className="bg-slate-100 border-b border-slate-300 font-bold uppercase text-slate-600">
+                          <tr>
+                            <th className="py-2 px-3 w-10 text-center">#</th>
+                            <th className="py-2 px-3 w-20 text-center">Qty</th>
+                            <th className="py-2 px-3">Item Description &amp; Details</th>
+                            <th className="py-2 px-3 w-12 text-center">Action</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-200">
+                          {editingTemplate.items.map((item, idx) => (
+                            <tr key={idx} className="hover:bg-slate-50/70">
+                              <td className="py-2 px-3 text-center font-bold text-slate-400">
+                                {idx + 1}
+                              </td>
+                              <td className="py-2 px-3">
+                                <input
+                                  type="number"
+                                  min="1"
+                                  value={item.qty}
+                                  onChange={(e) => handleTemplateItemChange(idx, 'qty', e.target.value)}
+                                  className="w-full text-center py-1 px-1.5 border border-slate-300 rounded text-xs font-bold focus:ring-1 focus:ring-red-500"
+                                  required
+                                />
+                              </td>
+                              <td className="py-2 px-3">
+                                <input
+                                  type="text"
+                                  value={item.description}
+                                  onChange={(e) => handleTemplateItemChange(idx, 'description', e.target.value)}
+                                  placeholder="e.g. EPSON INK 003 (BK) or Thermal Paper Rolls"
+                                  className="w-full py-1 px-2 border border-slate-300 rounded text-xs uppercase focus:ring-1 focus:ring-red-500"
+                                  required
+                                />
+                              </td>
+                              <td className="py-2 px-3 text-center">
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveTemplateItem(idx)}
+                                  className="p-1 text-slate-400 hover:text-red-600 rounded hover:bg-red-50 transition-colors"
+                                  title="Remove row"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Actions inside editor */}
+                  <div className="pt-2 flex justify-end gap-2 border-t border-slate-200">
+                    <button
+                      type="button"
+                      onClick={handleCancelEditTemplate}
+                      className="px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-200 rounded-lg cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleSaveTemplate}
+                      className="px-4 py-1.5 text-xs font-semibold bg-red-600 hover:bg-red-500 text-white rounded-lg shadow-sm flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <Check className="w-3.5 h-3.5" /> Done Editing Template
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                /* Templates List View */
+                <div className="space-y-4">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                    <div>
+                      <h4 className="text-xs font-black uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                        <FileCheck className="w-4 h-4 text-emerald-600" /> Item Presets ({(formData.templates || DEFAULT_ITEM_TEMPLATES).length})
+                      </h4>
+                      <p className="text-[11px] text-slate-500 mt-0.5">
+                        These templates appear as 1-click shortcut buttons in the new transmittal form.
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={handleResetTemplates}
+                        className="px-3 py-1.5 bg-white border border-slate-300 hover:bg-slate-100 text-slate-600 rounded-lg text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
+                        title="Restore original preset templates"
+                      >
+                        <RotateCcw className="w-3 h-3 text-slate-500" /> Reset Defaults
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleStartAddTemplate}
+                        className="px-3.5 py-1.5 bg-red-600 hover:bg-red-500 text-white rounded-lg text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-xs transition-all active:scale-98"
+                      >
+                        <Plus className="w-3.5 h-3.5" /> Add Template
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Template Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                    {(formData.templates || DEFAULT_ITEM_TEMPLATES).map((tmpl) => (
+                      <div
+                        key={tmpl.id}
+                        className="bg-white border border-slate-200 hover:border-slate-300 rounded-xl p-3.5 shadow-2xs flex flex-col justify-between space-y-2.5 transition-all"
+                      >
+                        <div>
+                          <div className="flex items-start justify-between gap-2 mb-1.5">
+                            <div className="flex items-center gap-1.5">
+                              <span className="w-2 h-2 rounded-full bg-red-600 shrink-0" />
+                              <h5 className="text-xs font-bold text-slate-900 truncate">
+                                {tmpl.label}
+                              </h5>
+                            </div>
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 shrink-0">
+                              {tmpl.items.length} {tmpl.items.length === 1 ? 'item' : 'items'}
+                            </span>
+                          </div>
+
+                          {tmpl.purpose && (
+                            <div className="mb-2">
+                              <span className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">
+                                Purpose: <span className="text-slate-800 font-bold">{tmpl.purpose}</span>
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Items Preview List */}
+                          <div className="bg-slate-50 rounded-lg p-2 space-y-1 text-slate-700 border border-slate-100">
+                            {tmpl.items.slice(0, 3).map((it, idx) => (
+                              <div key={idx} className="text-[11px] flex items-center justify-between gap-2 truncate">
+                                <span className="truncate">• {it.description}</span>
+                                <span className="text-[10px] font-bold text-slate-500 bg-white px-1.5 py-0.2 rounded border border-slate-200 shrink-0">
+                                  x{it.qty}
+                                </span>
+                              </div>
+                            ))}
+                            {tmpl.items.length > 3 && (
+                              <div className="text-[10px] text-slate-400 font-medium pl-2 italic">
+                                + {tmpl.items.length - 3} more items...
+                              </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Actions for this template */}
+                        <div className="pt-2 border-t border-slate-100 flex items-center justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleStartEditTemplate(tmpl)}
+                            className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md text-xs font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                          >
+                            <Edit2 className="w-3 h-3 text-slate-600" /> Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteTemplate(tmpl.id)}
+                            className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors cursor-pointer"
+                            title="Delete template"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

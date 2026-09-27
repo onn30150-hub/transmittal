@@ -58,6 +58,12 @@ export default function App() {
   const [activeHardCopyForm, setActiveHardCopyForm] = useState<TransmittalForm | null>(null);
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [settingsInitialTab, setSettingsInitialTab] = useState<'company' | 'signatories' | 'templates' | 'data'>('company');
+
+  const handleOpenSettings = (tab: 'company' | 'signatories' | 'templates' | 'data' = 'company') => {
+    setSettingsInitialTab(tab);
+    setIsSettingsOpen(true);
+  };
 
   // Load initial data
   const loadData = async () => {
@@ -259,7 +265,8 @@ export default function App() {
       <Navbar
         settings={settings}
         onNewTransmittal={handleNewTransmittal}
-        onOpenSettings={() => setIsSettingsOpen(true)}
+        onOpenSettings={() => handleOpenSettings('company')}
+        onOpenTemplates={() => handleOpenSettings('templates')}
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         viewMode={viewMode}
@@ -336,6 +343,7 @@ export default function App() {
           isOpen={isEditorOpen}
           onClose={() => setIsEditorOpen(false)}
           onSave={handleSaveForm}
+          onManageTemplates={() => handleOpenSettings('templates')}
         />
       )}
 
@@ -363,6 +371,7 @@ export default function App() {
         <SettingsModal
           settings={settings}
           isOpen={isSettingsOpen}
+          initialTab={settingsInitialTab}
           onClose={() => setIsSettingsOpen(false)}
           onSave={handleSaveSettings}
           onRefreshData={loadData}

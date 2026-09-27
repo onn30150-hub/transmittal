@@ -23,7 +23,8 @@ import {
   Upload,
   Calendar,
   Layers,
-  FileText
+  FileText,
+  Settings
 } from 'lucide-react';
 
 interface Props {
@@ -32,6 +33,7 @@ interface Props {
   isOpen: boolean;
   onClose: () => void;
   onSave: (form: TransmittalForm, andPrint?: boolean) => Promise<void>;
+  onManageTemplates?: () => void;
 }
 
 const COMMON_PURPOSES = [
@@ -61,7 +63,8 @@ export const TransmittalEditorModal: React.FC<Props> = ({
   settings,
   isOpen,
   onClose,
-  onSave
+  onSave,
+  onManageTemplates
 }) => {
   const isEditing = Boolean(initialForm);
 
@@ -574,6 +577,17 @@ export const TransmittalEditorModal: React.FC<Props> = ({
                     + {tmpl.label}
                   </button>
                 ))}
+                {onManageTemplates && (
+                  <button
+                    type="button"
+                    onClick={onManageTemplates}
+                    className="text-xs px-2 py-1 text-red-600 hover:text-red-700 hover:bg-red-50 font-semibold rounded-md border border-red-200 transition-colors cursor-pointer flex items-center gap-1 shadow-2xs ml-0.5"
+                    title="Edit or Add new 1-click item templates in Settings"
+                  >
+                    <Settings className="w-3 h-3 text-red-600" />
+                    <span>Manage / Add</span>
+                  </button>
+                )}
               </div>
             </div>
 
