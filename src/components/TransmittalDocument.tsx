@@ -122,18 +122,29 @@ export const TransmittalDocument: React.FC<Props> = ({
           <div className="flex-1 text-center py-2 font-black text-sm sm:text-base tracking-[0.3em] uppercase flex items-center justify-center">
             T R A N S M I T T A L &nbsp; F O R M
           </div>
-          <div className="w-48 sm:w-56 border-l-2 border-black text-center py-1 sm:py-1.5 font-bold text-[11px] sm:text-xs uppercase flex items-center justify-center tracking-wide leading-tight">
+          <div className="w-48 sm:w-56 border-l-2 border-black text-center py-1 sm:py-1.5 font-bold text-[11px] sm:text-xs uppercase flex items-center justify-center tracking-wide leading-tight shrink-0">
             DATE CREATED:&nbsp;<span className="font-black text-xs sm:text-[13px] tracking-wider">{formattedDate}</span>
           </div>
         </div>
 
-        {/* ROW 3: PURPOSE */}
-        <div className="flex border-b-2 border-black">
+        {/* ROW 3: PURPOSE & BRANCH DESTINATION */}
+        <div className="flex border-b-2 border-black bg-white">
           <div className="bg-black text-white px-3 py-2 text-[11px] font-black uppercase tracking-wider flex items-center justify-center shrink-0 w-24 sm:w-28">
             PURPOSE:
           </div>
           <div className="flex-1 px-3 py-2 font-bold text-[12px] uppercase tracking-wide flex items-center text-black">
             {form.purpose || 'EQUIPMENT & DOCUMENT TRANSMITTAL'}
+          </div>
+          <div className="w-48 sm:w-56 border-l-2 border-black flex items-center px-2.5 py-1.5 bg-white font-sans shrink-0 overflow-hidden">
+            <span className="font-black text-[10px] sm:text-[11px] text-black uppercase shrink-0 mr-1.5">
+              BRANCH:
+            </span>
+            <span
+              className="font-black text-xs sm:text-[13px] text-black uppercase tracking-wider truncate"
+              title={form.branchName || form.dropTo || ''}
+            >
+              {form.branchName || form.dropTo || ''}
+            </span>
           </div>
         </div>
 
@@ -142,14 +153,14 @@ export const TransmittalDocument: React.FC<Props> = ({
           {/* Table Header */}
           <div className="flex border-b border-black text-[9px] font-black uppercase text-center bg-white">
             <div className="w-16 border-r border-black py-0.5 shrink-0">QTY</div>
-            <div className="flex-1 border-r border-black py-0.5">DESCRIPTION</div>
-            <div className="w-48 sm:w-56 shrink-0 py-0.5">REMARKS</div>
+            <div className="flex-1 py-0.5">DESCRIPTION</div>
+            <div className="w-48 sm:w-56 border-l-2 border-black py-0.5 shrink-0">REMARKS</div>
           </div>
 
           {/* Table Content: Left side rows (Qty + Description), Right side Remarks with aligned dividers */}
           <div className="flex">
             {/* Left Items Column (Qty + Description) */}
-            <div className="flex-1 flex flex-col divide-y divide-black border-r border-black">
+            <div className="flex-1 flex flex-col divide-y divide-black">
               {items.map((item, idx) => (
                 <div key={idx} className="flex h-[26px] items-center text-[10px]">
                   <div className="w-16 border-r border-black text-center font-bold py-0.5 self-stretch flex items-center justify-center shrink-0">
@@ -174,8 +185,8 @@ export const TransmittalDocument: React.FC<Props> = ({
               ))}
             </div>
 
-            {/* Right REMARKS Column with aligned divider and prominent DROP TO */}
-            <div className="w-48 sm:w-56 shrink-0 flex flex-col text-center bg-white/40">
+            {/* Right REMARKS Column with aligned divider, DROP TO and Actual Remarks */}
+            <div className="w-48 sm:w-56 border-l-2 border-black shrink-0 flex flex-col text-center bg-white/40">
               {/* Row 1: DROP TO with increased font size and aligned horizontal divider */}
               <div className="h-[26px] border-b border-black px-2 flex items-center text-left">
                 <span className="font-black text-xs sm:text-[13px] uppercase tracking-tight text-black truncate">
@@ -183,10 +194,10 @@ export const TransmittalDocument: React.FC<Props> = ({
                 </span>
               </div>
 
-              {/* Remaining space: Centered Destination Branch / Remarks */}
-              <div className="flex-1 flex items-center justify-center p-2">
-                <span className="font-black text-xs sm:text-sm uppercase tracking-wider text-black block">
-                  {form.branchName || form.remarks || ''}
+              {/* Remaining space: Actual Remarks added in the modal */}
+              <div className="flex-1 flex items-center justify-center p-2 text-center overflow-hidden">
+                <span className="font-bold text-xs sm:text-[13px] uppercase tracking-wide text-black block whitespace-pre-line break-words max-h-full">
+                  {form.remarks || ''}
                 </span>
               </div>
             </div>

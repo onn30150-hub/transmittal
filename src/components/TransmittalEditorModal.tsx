@@ -142,7 +142,6 @@ export const TransmittalEditorModal: React.FC<Props> = ({
     try {
       const num = await StorageService.generateNextFormNumber(type, initialForm ? initialForm.id : undefined);
       setFormData((prev) => ({ ...prev, formNumber: num, fromType: type }));
-      setConflictInfo(null);
     } finally {
       setIsCheckingNumber(false);
     }
@@ -382,8 +381,7 @@ export const TransmittalEditorModal: React.FC<Props> = ({
                   onChange={(e) =>
                     setFormData({
                       ...formData,
-                      branchName: e.target.value.toUpperCase(),
-                      remarks: e.target.value.toUpperCase()
+                      branchName: e.target.value.toUpperCase()
                     })
                   }
                   placeholder="branch"
