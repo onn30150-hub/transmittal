@@ -49,7 +49,7 @@ export const TransmittalDocument: React.FC<Props> = ({
 
   return (
     <div
-      className={`bg-white text-black font-sans relative border-2 border-black select-text overflow-hidden ${
+      className={`w-full bg-white text-black font-sans relative border-2 border-black select-text overflow-hidden ${
         isCompact ? 'text-[10px] leading-tight' : 'text-[11px] leading-snug'
       }`}
       style={{ boxSizing: 'border-box' }}

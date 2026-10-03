@@ -380,36 +380,25 @@ export default function App() {
 
       {/* PRINT-ONLY DOM CONTAINER:
           Targeted directly by `@media print` when window.print() is called.
+          Optimized for Folio (8.5in x 13in) paper with 100% Fit-to-Width.
           - 2in1 copy: Prints HO Copy & Branch Copy on single 8.5in x 13in sheet with cut line.
-          - 2pages copy: Prints 2 separate pages of 8.5in x 6.5in paper (Page 1: HO Copy, Page 2: Branch Copy).
+          - 2pages copy: Prints 2 separate pages fit-to-width across Folio paper (Page 1: HO Copy, Page 2: Branch Copy).
       */}
-      {(activePrintMode === '2pages-copy' || activePrintMode === 'full-page') ? (
-        <style>{`
-          @page {
-            size: 8.5in 6.5in;
-            margin: 0.15in 0.25in 0.15in 0.25in;
+      <style>{`
+        @page {
+          size: 8.5in 13in portrait;
+          margin: 0.25in 0.25in 0.25in 0.25in;
+        }
+        @media print {
+          html, body {
+            width: 100% !important;
+            max-width: 100% !important;
+            height: auto !important;
+            margin: 0 !important;
+            padding: 0 !important;
           }
-          @media print {
-            html, body {
-              width: 8.5in !important;
-              height: 6.5in !important;
-            }
-          }
-        `}</style>
-      ) : (
-        <style>{`
-          @page {
-            size: 8.5in 13in portrait;
-            margin: 0.25in 0.3in 0.25in 0.3in;
-          }
-          @media print {
-            html, body {
-              width: 8.5in !important;
-              height: 13in !important;
-            }
-          }
-        `}</style>
-      )}
+        }
+      `}</style>
 
       {(printBatchForms.length > 0 ? printBatchForms : activePrintForm ? [activePrintForm] : []).length > 0 && (
         <div className="print-only">

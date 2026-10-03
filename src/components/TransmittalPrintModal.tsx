@@ -11,7 +11,8 @@ import {
   Layers,
   MapPin,
   Calendar,
-  FileText
+  FileText,
+  Maximize2
 } from 'lucide-react';
 
 interface Props {
@@ -63,34 +64,22 @@ export const TransmittalPrintModal: React.FC<Props> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-slate-900/85 backdrop-blur-sm overflow-hidden no-print">
-      {/* Dynamic @page size injection based on print mode */}
-      {is2pages ? (
-        <style>{`
-          @page {
-            size: 8.5in 6.5in;
-            margin: 0.15in 0.25in 0.15in 0.25in;
+      {/* Dynamic @page sizing matching Folio paper width */}
+      <style>{`
+        @page {
+          size: 8.5in 13in portrait;
+          margin: 0.25in 0.25in 0.25in 0.25in;
+        }
+        @media print {
+          html, body {
+            width: 100% !important;
+            max-width: 100% !important;
+            height: auto !important;
+            margin: 0 !important;
+            padding: 0 !important;
           }
-          @media print {
-            html, body {
-              width: 8.5in !important;
-              height: 6.5in !important;
-            }
-          }
-        `}</style>
-      ) : (
-        <style>{`
-          @page {
-            size: 8.5in 13in portrait;
-            margin: 0.25in 0.3in 0.25in 0.3in;
-          }
-          @media print {
-            html, body {
-              width: 8.5in !important;
-              height: 13in !important;
-            }
-          }
-        `}</style>
-      )}
+        }
+      `}</style>
 
       {/* Top Action Toolbar */}
       <div className="bg-slate-900 text-white px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3 border-b border-slate-700 shadow-md shrink-0">
@@ -107,8 +96,8 @@ export const TransmittalPrintModal: React.FC<Props> = ({
                 <span className="bg-red-500/20 text-red-300 font-bold px-2.5 py-0.5 rounded text-xs border border-red-500/30 flex items-center gap-1.5">
                   <span>
                     {is2pages
-                      ? `${formsList.length} Slips (${formsList.length * 2} Pages)`
-                      : `${formsList.length} Sheets (2in1)`}
+                      ? `${formsList.length} Slips (${formsList.length * 2} Pages Fit to Width)`
+                      : `${formsList.length} Sheets (2in1 Folio)`}
                   </span>
                 </span>
               ) : (
@@ -163,15 +152,15 @@ export const TransmittalPrintModal: React.FC<Props> = ({
                   ? 'bg-red-600 text-white shadow-sm font-semibold'
                   : 'text-slate-300 hover:text-white'
               }`}
-              title="2 separate pages of 8.5x6.5 paper size (Page 1: HO Copy, Page 2: Branch Copy)"
+              title="2 separate pages fitted to 100% width on Folio paper (Page 1: HO Copy, Page 2: Branch Copy)"
             >
               <Files className="w-3.5 h-3.5" />
               <span>2pages copy</span>
             </button>
           </div>
 
-          {/* Zoom controls */}
-          <div className="hidden lg:flex items-center bg-slate-800 rounded-lg border border-slate-700 text-xs text-slate-300 px-2 py-1 gap-2">
+          {/* Zoom & Fit-to-Width controls */}
+          <div className="hidden lg:flex items-center bg-slate-800 rounded-lg border border-slate-700 text-xs text-slate-300 px-2 py-1 gap-1.5">
             <button
               onClick={() => setZoom((z) => Math.max(40, z - 10))}
               className="p-1 hover:text-white cursor-pointer"
@@ -187,6 +176,14 @@ export const TransmittalPrintModal: React.FC<Props> = ({
             >
               <ZoomIn className="w-3.5 h-3.5" />
             </button>
+            <button
+              onClick={() => setZoom(100)}
+              className="px-2 py-0.5 ml-1 bg-slate-700 hover:bg-slate-600 text-slate-200 hover:text-white rounded text-[11px] font-semibold transition-colors cursor-pointer flex items-center gap-1"
+              title="Fit to Width 100%"
+            >
+              <Maximize2 className="w-3 h-3" />
+              <span>Fit Width</span>
+            </button>
           </div>
 
           {/* Print button */}
@@ -201,7 +198,7 @@ export const TransmittalPrintModal: React.FC<Props> = ({
                   ? `Print All (${formsList.length * 2} Pages)`
                   : `Print All (${formsList.length} Sheets)`
                 : is2pages
-                ? 'Print 2 Pages (8.5" x 6.5")'
+                ? 'Print 2 Pages (Fit to Width)'
                 : 'Print 2in1 Slip (8.5" x 13")'}
             </span>
           </button>
@@ -220,7 +217,7 @@ export const TransmittalPrintModal: React.FC<Props> = ({
       <div className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 flex justify-center items-start bg-slate-950/70">
         <div
           style={{ transform: `scale(${zoom / 100})`, transformOrigin: 'top center' }}
-          className="transition-transform duration-150 flex flex-col items-center space-y-10 pb-16"
+          className="transition-transform duration-150 flex flex-col items-center space-y-10 pb-16 w-full max-w-[880px]"
         >
           {formsList.map((itemForm, index) => {
             const formattedDate = new Date(itemForm.date).toLocaleDateString('en-US', {
@@ -229,18 +226,18 @@ export const TransmittalPrintModal: React.FC<Props> = ({
               year: 'numeric'
             });
 
-            // 2 PAGES COPY MODE: 2 separate pages of 8.5" x 6.5" paper size
+            // 2 PAGES COPY MODE: 2 separate pages fitted to width
             if (is2pages) {
               return (
-                <div key={itemForm.id} className="flex flex-col items-center space-y-6">
-                  {/* PAGE 1: HEAD OFFICE COPY (8.5" x 6.5" half-sheet) */}
+                <div key={itemForm.id} className="flex flex-col items-center space-y-6 w-full">
+                  {/* PAGE 1: HEAD OFFICE COPY (Fitted to Width) */}
                   <div
                     id={`preview-sheet-${index}-p1`}
-                    className="flex flex-col items-center"
+                    className="flex flex-col items-center w-full"
                   >
                     {/* Page 1 Header Ribbon */}
-                    <div className="w-[800px] bg-slate-800 text-slate-200 px-4 py-2 rounded-t-lg border-t border-x border-slate-700 flex items-center justify-between text-xs shadow-sm mb-0">
-                      <div className="flex items-center gap-2.5">
+                    <div className="w-full bg-slate-800 text-slate-200 px-4 py-2 rounded-t-lg border-t border-x border-slate-700 flex items-center justify-between text-xs shadow-sm mb-0">
+                      <div className="flex items-center gap-2.5 flex-wrap">
                         <span className="bg-red-600 text-white font-bold px-2 py-0.5 rounded text-[11px]">
                           {isBulk ? `Slip ${index + 1} • ` : ''}Page 1 of 2
                         </span>
@@ -260,12 +257,12 @@ export const TransmittalPrintModal: React.FC<Props> = ({
                         </span>
                       </div>
                       <div className="text-[11px] text-emerald-400 font-mono font-semibold">
-                        8.5" x 6.5" Paper Size
+                        Fit to Width (Folio)
                       </div>
                     </div>
 
                     {/* Page 1 Body */}
-                    <div className="w-[800px] min-h-[580px] bg-white shadow-2xl rounded-b-lg border border-slate-300 p-3 flex flex-col justify-center">
+                    <div className="w-full bg-white shadow-2xl rounded-b-lg border border-slate-300 p-3.5 flex flex-col justify-center">
                       <TransmittalDocument
                         form={itemForm}
                         settings={settings}
@@ -276,14 +273,14 @@ export const TransmittalPrintModal: React.FC<Props> = ({
                     </div>
                   </div>
 
-                  {/* PAGE 2: BRANCH COPY (8.5" x 6.5" half-sheet) */}
+                  {/* PAGE 2: BRANCH COPY (Fitted to Width) */}
                   <div
                     id={`preview-sheet-${index}-p2`}
-                    className="flex flex-col items-center"
+                    className="flex flex-col items-center w-full"
                   >
                     {/* Page 2 Header Ribbon */}
-                    <div className="w-[800px] bg-slate-800 text-slate-200 px-4 py-2 rounded-t-lg border-t border-x border-slate-700 flex items-center justify-between text-xs shadow-sm mb-0">
-                      <div className="flex items-center gap-2.5">
+                    <div className="w-full bg-slate-800 text-slate-200 px-4 py-2 rounded-t-lg border-t border-x border-slate-700 flex items-center justify-between text-xs shadow-sm mb-0">
+                      <div className="flex items-center gap-2.5 flex-wrap">
                         <span className="bg-emerald-600 text-white font-bold px-2 py-0.5 rounded text-[11px]">
                           {isBulk ? `Slip ${index + 1} • ` : ''}Page 2 of 2
                         </span>
@@ -303,12 +300,12 @@ export const TransmittalPrintModal: React.FC<Props> = ({
                         </span>
                       </div>
                       <div className="text-[11px] text-emerald-400 font-mono font-semibold">
-                        8.5" x 6.5" Paper Size
+                        Fit to Width (Folio)
                       </div>
                     </div>
 
                     {/* Page 2 Body */}
-                    <div className="w-[800px] min-h-[580px] bg-white shadow-2xl rounded-b-lg border border-slate-300 p-3 flex flex-col justify-center">
+                    <div className="w-full bg-white shadow-2xl rounded-b-lg border border-slate-300 p-3.5 flex flex-col justify-center">
                       <TransmittalDocument
                         form={itemForm}
                         settings={settings}
@@ -327,11 +324,11 @@ export const TransmittalPrintModal: React.FC<Props> = ({
               <div
                 key={itemForm.id}
                 id={`preview-sheet-${index}`}
-                className="flex flex-col items-center"
+                className="flex flex-col items-center w-full"
               >
                 {/* Continuous Page Header Ribbon */}
-                <div className="w-[800px] bg-slate-800 text-slate-200 px-4 py-2 rounded-t-lg border-t border-x border-slate-700 flex items-center justify-between text-xs shadow-sm mb-0">
-                  <div className="flex items-center gap-2.5">
+                <div className="w-full bg-slate-800 text-slate-200 px-4 py-2 rounded-t-lg border-t border-x border-slate-700 flex items-center justify-between text-xs shadow-sm mb-0">
+                  <div className="flex items-center gap-2.5 flex-wrap">
                     <span className="bg-red-600 text-white font-bold px-2 py-0.5 rounded text-[11px]">
                       Sheet {index + 1} of {formsList.length}
                     </span>
@@ -352,8 +349,8 @@ export const TransmittalPrintModal: React.FC<Props> = ({
                   </div>
                 </div>
 
-                {/* Sheet Body (8.5in x 13in proportion: 800px x 1224px) */}
-                <div className="w-[800px] min-h-[1224px] bg-white shadow-2xl rounded-b-lg border border-slate-300 p-4 flex flex-col justify-between">
+                {/* Sheet Body (8.5in x 13in proportion: 850px x 1300px) */}
+                <div className="w-full min-h-[1224px] bg-white shadow-2xl rounded-b-lg border border-slate-300 p-4 flex flex-col justify-between">
                   {/* Top Half: Head Office Copy */}
                   <div className="flex-1 pb-3 flex flex-col justify-center">
                     <TransmittalDocument

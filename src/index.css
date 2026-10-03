@@ -22,7 +22,7 @@ body {
 /* Print specific styles optimized for 8.5in x 13in (Philippine Long Bond / Folio / F4 Paper) */
 @page {
   size: 8.5in 13in portrait;
-  margin: 0.25in 0.3in 0.25in 0.3in;
+  margin: 0.25in 0.25in 0.25in 0.25in;
 }
 
 @media screen {
@@ -38,8 +38,9 @@ body {
     font-size: 10pt !important;
     margin: 0 !important;
     padding: 0 !important;
-    width: 8.5in !important;
-    height: 13in !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
@@ -50,11 +51,14 @@ body {
 
   .print-only {
     display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
   .print-container {
-    width: 7.9in !important;
-    max-width: 7.9in !important;
+    width: 100% !important;
+    max-width: 100% !important;
     height: 12.5in !important;
     max-height: 12.5in !important;
     margin: 0 auto !important;
@@ -67,8 +71,8 @@ body {
 
   .print-page,
   .print-page-2in1 {
-    width: 7.9in !important;
-    max-width: 7.9in !important;
+    width: 100% !important;
+    max-width: 100% !important;
     height: 12.5in !important;
     max-height: 12.5in !important;
     margin: 0 auto !important;
@@ -82,10 +86,8 @@ body {
   }
 
   .print-page-halfsheet {
-    width: 8.0in !important;
-    max-width: 8.0in !important;
-    height: 6.1in !important;
-    max-height: 6.1in !important;
+    width: 100% !important;
+    max-width: 100% !important;
     margin: 0 auto !important;
     padding: 0 !important;
     box-sizing: border-box !important;
