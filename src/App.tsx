@@ -51,7 +51,7 @@ export default function App() {
   const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
   const [activePrintForm, setActivePrintForm] = useState<TransmittalForm | null>(null);
   const [printBatchForms, setPrintBatchForms] = useState<TransmittalForm[]>([]);
-  const [activePrintMode, setActivePrintMode] = useState<PrintMode>('dual-copy');
+  const [activePrintMode, setActivePrintMode] = useState<PrintMode>('2in1-copy');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   const [isHardCopyModalOpen, setIsHardCopyModalOpen] = useState(false);
@@ -245,7 +245,7 @@ export default function App() {
   };
 
   const handleSaveForm = async (savedForm: TransmittalForm, andPrint = false) => {
-    const persisted = await StorageService.saveTransmittal(savedForm);
+    const persisted = await StorageService.saveTransmittal(savedForm, { disallowDuplicate: true });
     const fresh = await StorageService.getTransmittals();
     setForms(fresh);
     if (andPrint) {
@@ -380,16 +380,79 @@ export default function App() {
 
       {/* PRINT-ONLY DOM CONTAINER:
           Targeted directly by `@media print` when window.print() is called.
-          Optimized for 8.5in x 13in (Philippine Long Bond / Folio) paper!
-          Supports bulk printing: each slip renders on its own separate sheet.
+          - 2in1 copy: Prints HO Copy & Branch Copy on single 8.5in x 13in sheet with cut line.
+          - 2pages copy: Prints 2 separate pages of 8.5in x 6.5in paper (Page 1: HO Copy, Page 2: Branch Copy).
       */}
+      {(activePrintMode === '2pages-copy' || activePrintMode === 'full-page') ? (
+        <style>{`
+          @page {
+            size: 8.5in 6.5in;
+            margin: 0.15in 0.25in 0.15in 0.25in;
+          }
+          @media print {
+            html, body {
+              width: 8.5in !important;
+              height: 6.5in !important;
+            }
+          }
+        `}</style>
+      ) : (
+        <style>{`
+          @page {
+            size: 8.5in 13in portrait;
+            margin: 0.25in 0.3in 0.25in 0.3in;
+          }
+          @media print {
+            html, body {
+              width: 8.5in !important;
+              height: 13in !important;
+            }
+          }
+        `}</style>
+      )}
+
       {(printBatchForms.length > 0 ? printBatchForms : activePrintForm ? [activePrintForm] : []).length > 0 && (
         <div className="print-only">
-          {(printBatchForms.length > 0 ? printBatchForms : activePrintForm ? [activePrintForm] : []).map((batchForm) => (
-            <div key={batchForm.id} className="print-page">
-              {activePrintMode === 'dual-copy' ? (
+          {(printBatchForms.length > 0 ? printBatchForms : activePrintForm ? [activePrintForm] : []).map((batchForm) => {
+            const is2Pages = activePrintMode === '2pages-copy' || activePrintMode === 'full-page';
+
+            if (is2Pages) {
+              return (
+                <React.Fragment key={batchForm.id}>
+                  {/* Page 1: Head Office Copy (8.5in x 6.5in paper) */}
+                  <div className="print-page-halfsheet">
+                    <div className="w-full h-full flex flex-col justify-center">
+                      <TransmittalDocument
+                        form={batchForm}
+                        settings={settings}
+                        watermarkType="head-office"
+                        copyLabel="HEAD OFFICE COPY"
+                        isCompact={true}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Page 2: Branch Copy (8.5in x 6.5in paper) */}
+                  <div className="print-page-halfsheet">
+                    <div className="w-full h-full flex flex-col justify-center">
+                      <TransmittalDocument
+                        form={batchForm}
+                        settings={settings}
+                        watermarkType="branch"
+                        copyLabel="BRANCH COPY"
+                        isCompact={true}
+                      />
+                    </div>
+                  </div>
+                </React.Fragment>
+              );
+            }
+
+            // 2in1 copy mode (Head Office Copy and Branch Copy on single 8.5in x 13in paper)
+            return (
+              <div key={batchForm.id} className="print-page-2in1">
                 <div className="w-full h-full flex flex-col justify-between">
-                  {/* Top Half: Head Office Copy (fits top 6.25 inches) */}
+                  {/* Top Half: Head Office Copy */}
                   <div className="flex-1 flex flex-col justify-center pb-2">
                     <TransmittalDocument
                       form={batchForm}
@@ -403,7 +466,7 @@ export default function App() {
                   {/* Center Cut Line Divider */}
                   <div className="w-full my-1.5 border-t-2 border-dashed border-black" />
 
-                  {/* Bottom Half: Branch Copy (fits bottom 6.25 inches) */}
+                  {/* Bottom Half: Branch Copy */}
                   <div className="flex-1 flex flex-col justify-center pt-2">
                     <TransmittalDocument
                       form={batchForm}
@@ -414,20 +477,9 @@ export default function App() {
                     />
                   </div>
                 </div>
-              ) : (
-                /* Full Page Mode on 8.5in x 13in sheet */
-                <div className="w-full h-full flex flex-col justify-center">
-                  <TransmittalDocument
-                    form={batchForm}
-                    settings={settings}
-                    watermarkType="head-office"
-                    copyLabel="HEAD OFFICE COPY"
-                    isCompact={false}
-                  />
-                </div>
-              )}
-            </div>
-          ))}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

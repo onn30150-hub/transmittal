@@ -84,4 +84,4 @@ export interface FilterOptions {
   purpose: string;
 }
 
-export type PrintMode = 'full-page' | 'dual-copy'; // Full letter/A4 vs 2-in-1 half sheet (Original + Duplicate)
+export type PrintMode = '2in1-copy' | '2pages-copy' | 'dual-copy' | 'full-page'; // 2in1 copy (single 8.5x13) vs 2pages copy (2 pages of 8.5x6.5)
