@@ -19,7 +19,8 @@ import {
   RotateCcw,
   FileCheck,
   Package,
-  ArrowRight
+  ArrowRight,
+  Save
 } from 'lucide-react';
 
 interface Props {
@@ -86,7 +87,7 @@ export const SettingsModal: React.FC<Props> = ({
     setEditingTemplate(null);
   };
 
-  const handleSaveTemplate = () => {
+  const handleSaveTemplate = async () => {
     if (!editingTemplate) return;
     const trimmedLabel = editingTemplate.label.trim();
     if (!trimmedLabel) {
@@ -102,47 +103,87 @@ export const SettingsModal: React.FC<Props> = ({
     const templateToSave: ItemTemplate = {
       ...editingTemplate,
       label: trimmedLabel,
-      purpose: editingTemplate.purpose?.trim() || undefined,
+      purpose: editingTemplate.purpose?.trim() || '',
       items: validItems
     };
 
-    setFormData((prev) => {
-      const currentList = prev.templates || DEFAULT_ITEM_TEMPLATES;
-      const index = currentList.findIndex((t) => t.id === templateToSave.id);
-      let updated: ItemTemplate[];
-      if (index >= 0) {
-        updated = [...currentList];
-        updated[index] = templateToSave;
-      } else {
-        updated = [...currentList, templateToSave];
-      }
-      return { ...prev, templates: updated };
-    });
+    const currentList = formData.templates || DEFAULT_ITEM_TEMPLATES;
+    const index = currentList.findIndex((t) => t.id === templateToSave.id);
+    let updatedTemplates: ItemTemplate[];
+    if (index >= 0) {
+      updatedTemplates = [...currentList];
+      updatedTemplates[index] = templateToSave;
+    } else {
+      updatedTemplates = [...currentList, templateToSave];
+    }
 
+    const newSettings: TransmittalSettings = {
+      ...formData,
+      templates: updatedTemplates
+    };
+
+    setFormData(newSettings);
     setEditingTemplate(null);
-  };
 
-  const handleDeleteTemplate = (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this template?')) return;
-    setFormData((prev) => {
-      const currentList = prev.templates || DEFAULT_ITEM_TEMPLATES;
-      return {
-        ...prev,
-        templates: currentList.filter((t) => t.id !== id)
-      };
-    });
-    if (editingTemplate?.id === id) {
-      setEditingTemplate(null);
+    // Save immediately and directly to storage / Firestore!
+    try {
+      setIsSaving(true);
+      await onSave(newSettings);
+      setMsg({ text: `Template "${templateToSave.label}" saved and added successfully!`, type: 'success' });
+    } catch (err) {
+      console.error('Error saving template:', err);
+      setMsg({ text: 'Failed to save template to database.', type: 'error' });
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const handleResetTemplates = () => {
-    if (window.confirm('Reset all templates to the factory default presets?')) {
-      setFormData((prev) => ({
-        ...prev,
-        templates: DEFAULT_ITEM_TEMPLATES
-      }));
+  const handleDeleteTemplate = async (id: string) => {
+    const currentList = formData.templates || DEFAULT_ITEM_TEMPLATES;
+    const target = currentList.find((t) => t.id === id);
+    if (!window.confirm(`Are you sure you want to delete template "${target?.label || 'this item'}"?`)) return;
+
+    const updatedTemplates = currentList.filter((t) => t.id !== id);
+    const newSettings: TransmittalSettings = {
+      ...formData,
+      templates: updatedTemplates
+    };
+
+    setFormData(newSettings);
+    if (editingTemplate?.id === id) {
       setEditingTemplate(null);
+    }
+
+    try {
+      setIsSaving(true);
+      await onSave(newSettings);
+      setMsg({ text: 'Template deleted successfully.', type: 'success' });
+    } catch (err) {
+      console.error('Error deleting template:', err);
+      setMsg({ text: 'Failed to delete template from database.', type: 'error' });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleResetTemplates = async () => {
+    if (!window.confirm('Reset all templates to the factory default presets?')) return;
+    const newSettings: TransmittalSettings = {
+      ...formData,
+      templates: DEFAULT_ITEM_TEMPLATES
+    };
+    setFormData(newSettings);
+    setEditingTemplate(null);
+
+    try {
+      setIsSaving(true);
+      await onSave(newSettings);
+      setMsg({ text: 'Templates reset to factory presets.', type: 'success' });
+    } catch (err) {
+      console.error('Error resetting templates:', err);
+      setMsg({ text: 'Failed to reset templates.', type: 'error' });
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -202,9 +243,38 @@ export const SettingsModal: React.FC<Props> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    let settingsToSave = { ...formData };
+
+    // If template editor is actively open, auto-commit it before saving
+    if (editingTemplate && editingTemplate.label.trim()) {
+      const trimmedLabel = editingTemplate.label.trim();
+      const validItems = editingTemplate.items.filter((it) => it.description.trim().length > 0);
+      if (validItems.length > 0) {
+        const templateToSave: ItemTemplate = {
+          ...editingTemplate,
+          label: trimmedLabel,
+          purpose: editingTemplate.purpose?.trim() || '',
+          items: validItems
+        };
+        const currentList = formData.templates || DEFAULT_ITEM_TEMPLATES;
+        const index = currentList.findIndex((t) => t.id === templateToSave.id);
+        let updated: ItemTemplate[];
+        if (index >= 0) {
+          updated = [...currentList];
+          updated[index] = templateToSave;
+        } else {
+          updated = [...currentList, templateToSave];
+        }
+        settingsToSave.templates = updated;
+        setFormData(settingsToSave);
+        setEditingTemplate(null);
+      }
+    }
+
     try {
       setIsSaving(true);
-      await onSave(formData);
+      await onSave(settingsToSave);
       setMsg({ text: 'Settings saved successfully!', type: 'success' });
       setTimeout(() => {
         onClose();
@@ -643,9 +713,10 @@ export const SettingsModal: React.FC<Props> = ({
                     <button
                       type="button"
                       onClick={handleSaveTemplate}
-                      className="px-4 py-1.5 text-xs font-semibold bg-red-600 hover:bg-red-500 text-white rounded-lg shadow-sm flex items-center gap-1.5 cursor-pointer"
+                      disabled={isSaving}
+                      className="px-4 py-1.5 text-xs font-semibold bg-red-600 hover:bg-red-500 text-white rounded-lg shadow-sm flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
                     >
-                      <Check className="w-3.5 h-3.5" /> Done Editing Template
+                      <Save className="w-3.5 h-3.5" /> {isSaving ? 'Saving...' : 'Save Template'}
                     </button>
                   </div>
                 </div>

@@ -48,7 +48,8 @@ service cloud.firestore {
         && data.companyName is string && data.companyName.size() <= 200
         && data.companyAddress is string && data.companyAddress.size() <= 500
         && data.companyContact is string && data.companyContact.size() <= 500
-        && (!('companyLogoUrl' in data) || (data.companyLogoUrl is string && data.companyLogoUrl.size() <= 100000));
+        && (!('companyLogoUrl' in data) || (data.companyLogoUrl is string && data.companyLogoUrl.size() <= 100000))
+        && (!('templates' in data) || (data.templates is list && data.templates.size() <= 100));
     }
 
     // 5. Transmittal Records Collection (Shared Multi-User Database)

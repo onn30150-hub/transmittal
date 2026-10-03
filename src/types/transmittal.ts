@@ -56,6 +56,12 @@ export interface ItemTemplate {
   items: TransmittalItem[];
 }
 
+export interface FormNumberConflictResult {
+  isConflict: boolean;
+  conflictingRecord?: TransmittalForm;
+  suggestedNumber: string;
+}
+
 export interface TransmittalSettings {
   companyName: string;              // "MICROBASE MOTORBIKE CORP"
   companyAddress: string;           // "MMC Complex, TASCOR Compound, Anabu 1-C, Imus Cavite"

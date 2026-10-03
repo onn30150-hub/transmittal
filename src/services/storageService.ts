@@ -1,4 +1,4 @@
-import { TransmittalForm, TransmittalSettings, SignatoryLocationType, ItemTemplate } from '../types/transmittal';
+import { TransmittalForm, TransmittalSettings, SignatoryLocationType, ItemTemplate, FormNumberConflictResult } from '../types/transmittal';
 import {
   collection,
   doc,
@@ -443,9 +443,36 @@ export const StorageService = {
     return all.find((f) => f.id === id) || null;
   },
 
-  async saveTransmittal(form: TransmittalForm): Promise<TransmittalForm> {
+  async saveTransmittal(
+    form: TransmittalForm,
+    options?: { disallowDuplicate?: boolean; autoResolveDuplicate?: boolean }
+  ): Promise<TransmittalForm> {
+    let finalFormNumber = (form.formNumber || '').trim().toUpperCase();
+
+    // Safeguard check for duplicate formNumber across all users
+    if (finalFormNumber) {
+      const conflict = await this.checkFormNumberConflict(finalFormNumber, form.id);
+      if (conflict.isConflict && conflict.conflictingRecord) {
+        if (options?.autoResolveDuplicate) {
+          finalFormNumber = conflict.suggestedNumber;
+          console.warn(
+            `[Safeguard] Auto-resolved duplicate transmittal #${form.formNumber} to #${finalFormNumber}`
+          );
+        } else if (options?.disallowDuplicate) {
+          const err = new Error(
+            `Transmittal #${finalFormNumber} has already been saved by another user. Next available: ${conflict.suggestedNumber}`
+          );
+          (err as any).code = 'DUPLICATE_FORM_NUMBER';
+          (err as any).conflictingRecord = conflict.conflictingRecord;
+          (err as any).suggestedNumber = conflict.suggestedNumber;
+          throw err;
+        }
+      }
+    }
+
     const updatedForm: TransmittalForm = {
       ...form,
+      formNumber: finalFormNumber || form.formNumber,
       createdAt: form.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
@@ -453,18 +480,14 @@ export const StorageService = {
     // 1. Save directly to shared Firebase Firestore
     const path = `transmittals/${updatedForm.id}`;
     try {
-      const payload: Record<string, any> = {
+      const rawPayload = {
         ...updatedForm,
         authorId: updatedForm.authorId || auth.currentUser?.uid || 'user',
         authorEmail: updatedForm.authorEmail || auth.currentUser?.email || ''
       };
 
-      // Clean undefined properties
-      Object.keys(payload).forEach((key) => {
-        if (payload[key] === undefined) {
-          delete payload[key];
-        }
-      });
+      // Safely strip all undefined values at any nesting depth for Firestore
+      const payload = JSON.parse(JSON.stringify(rawPayload));
 
       await setDoc(doc(db, 'transmittals', updatedForm.id), payload);
     } catch (err) {
@@ -541,7 +564,11 @@ export const StorageService = {
       const snap = await getDoc(doc(db, 'settings', 'main_settings'));
       if (snap.exists()) {
         const remoteSettings = snap.data() as TransmittalSettings;
-        return ensureTemplates(remoteSettings);
+        const merged = ensureTemplates(remoteSettings);
+        try {
+          localStorage.setItem(LS_SETTINGS_KEY, JSON.stringify(merged));
+        } catch {}
+        return merged;
       }
     } catch {}
 
@@ -590,13 +617,13 @@ export const StorageService = {
 
     // Save directly to shared Firestore
     try {
-      const payload: Record<string, any> = {
-        ...settings,
-        updatedAt: new Date().toISOString()
-      };
-      Object.keys(payload).forEach((k) => {
-        if (payload[k] === undefined) delete payload[k];
-      });
+      // Deep strip all undefined values anywhere in settings or template items
+      const payload = JSON.parse(
+        JSON.stringify({
+          ...settings,
+          updatedAt: new Date().toISOString()
+        })
+      );
       await setDoc(doc(db, 'settings', 'main_settings'), payload);
     } catch (err) {
       console.warn('Direct Firestore save settings failed:', err);
@@ -606,23 +633,111 @@ export const StorageService = {
     return settings;
   },
 
-  async generateNextFormNumber(locationType: SignatoryLocationType = 'HO'): Promise<string> {
-    const forms = await this.getTransmittals();
-    const currentYear = new Date().getFullYear().toString().slice(-2);
-    const prefix = `${locationType}${currentYear}-`;
+  async checkFormNumberConflict(
+    formNumber: string,
+    excludeId?: string
+  ): Promise<FormNumberConflictResult> {
+    const trimmed = (formNumber || '').trim().toUpperCase();
+    if (!trimmed) {
+      return { isConflict: false, suggestedNumber: '' };
+    }
 
-    let maxNumber = 0;
+    // Always fetch latest records directly from server/cache
+    const forms = await this.getTransmittals();
+
+    const conflictingRecord = forms.find(
+      (f) =>
+        f.formNumber?.trim().toUpperCase() === trimmed &&
+        (!excludeId || f.id !== excludeId)
+    );
+
+    if (!conflictingRecord) {
+      return { isConflict: false, suggestedNumber: trimmed };
+    }
+
+    // Determine prefix and compute the next guaranteed untaken sequential number
+    const prefixMatch = trimmed.match(/^([A-Za-z0-9_\-\/]+?)(0*([0-9]+))$/);
+    let prefix = '';
+    let padLength = 3;
+
+    if (prefixMatch) {
+      prefix = prefixMatch[1];
+      padLength = Math.max(3, prefixMatch[2].length);
+    } else {
+      const yr = new Date().getFullYear().toString().slice(-2);
+      prefix = `HO${yr}-`;
+    }
+
+    let maxNum = 0;
+    const existingNumSet = new Set<string>();
+
     forms.forEach((f) => {
-      if (f.formNumber && f.formNumber.startsWith(prefix)) {
-        const numPart = parseInt(f.formNumber.replace(prefix, ''), 10);
-        if (!isNaN(numPart) && numPart > maxNumber) {
-          maxNumber = numPart;
+      const fNum = f.formNumber?.trim().toUpperCase();
+      if (fNum) {
+        existingNumSet.add(fNum);
+        if (fNum.startsWith(prefix)) {
+          const numPart = parseInt(fNum.replace(prefix, ''), 10);
+          if (!isNaN(numPart) && numPart > maxNum) {
+            maxNum = numPart;
+          }
         }
       }
     });
 
-    const nextNumber = maxNumber + 1;
-    return `${prefix}${nextNumber.toString().padStart(3, '0')}`;
+    let nextCandidate = maxNum + 1;
+    let candidateStr = `${prefix}${nextCandidate.toString().padStart(padLength, '0')}`;
+    while (existingNumSet.has(candidateStr)) {
+      nextCandidate++;
+      candidateStr = `${prefix}${nextCandidate.toString().padStart(padLength, '0')}`;
+    }
+
+    return {
+      isConflict: true,
+      conflictingRecord,
+      suggestedNumber: candidateStr
+    };
+  },
+
+  async generateNextFormNumber(
+    locationTypeOrPrefix: SignatoryLocationType | string = 'HO',
+    excludeId?: string
+  ): Promise<string> {
+    const forms = await this.getTransmittals();
+    const currentYear = new Date().getFullYear().toString().slice(-2);
+
+    let prefix = '';
+    if (locationTypeOrPrefix === 'HO' || locationTypeOrPrefix === 'BR') {
+      prefix = `${locationTypeOrPrefix}${currentYear}-`;
+    } else if (typeof locationTypeOrPrefix === 'string' && locationTypeOrPrefix.length > 0) {
+      prefix = locationTypeOrPrefix.toUpperCase();
+    } else {
+      prefix = `HO${currentYear}-`;
+    }
+
+    let maxNumber = 0;
+    const existingNumSet = new Set<string>();
+
+    forms.forEach((f) => {
+      const fNum = f.formNumber?.trim().toUpperCase();
+      if (fNum && (!excludeId || f.id !== excludeId)) {
+        existingNumSet.add(fNum);
+        if (fNum.startsWith(prefix)) {
+          const numPart = parseInt(fNum.replace(prefix, ''), 10);
+          if (!isNaN(numPart) && numPart > maxNumber) {
+            maxNumber = numPart;
+          }
+        }
+      }
+    });
+
+    let nextNumber = maxNumber + 1;
+    let candidate = `${prefix}${nextNumber.toString().padStart(3, '0')}`;
+    while (existingNumSet.has(candidate)) {
+      nextNumber++;
+      candidate = `${prefix}${nextNumber.toString().padStart(3, '0')}`;
+    }
+
+    return candidate;
   },
 
   async exportJSON(): Promise<string> {

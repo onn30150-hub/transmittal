@@ -183,10 +183,10 @@ export default function App() {
       createdAt: new Date().toISOString(),
       updatedAt: undefined
     };
-    await StorageService.saveTransmittal(duplicated);
+    const persisted = await StorageService.saveTransmittal(duplicated, { autoResolveDuplicate: true });
     const updated = await StorageService.getTransmittals();
     setForms(updated);
-    setEditingForm(duplicated);
+    setEditingForm(persisted);
     setIsEditorOpen(true);
   };
 
@@ -245,11 +245,11 @@ export default function App() {
   };
 
   const handleSaveForm = async (savedForm: TransmittalForm, andPrint = false) => {
-    await StorageService.saveTransmittal(savedForm);
+    const persisted = await StorageService.saveTransmittal(savedForm);
     const fresh = await StorageService.getTransmittals();
     setForms(fresh);
     if (andPrint) {
-      setActivePrintForm(savedForm);
+      setActivePrintForm(persisted);
       setIsPrintModalOpen(true);
     }
   };

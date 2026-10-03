@@ -53,6 +53,7 @@
         "defaultNotedByName": { "type": "string", "maxLength": 128 },
         "defaultNotedByType": { "type": "string", "enum": ["HO", "BR"] },
         "quickNamesPreset": { "type": "array" },
+        "templates": { "type": "array" },
         "updatedAt": { "type": "string", "maxLength": 64 }
       },
       "required": ["companyName", "companyAddress", "companyContact"]
