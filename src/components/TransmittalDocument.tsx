@@ -54,16 +54,16 @@ export const TransmittalDocument: React.FC<Props> = ({
       }`}
       style={{ boxSizing: 'border-box' }}
     >
-      {/* 70% Transparent Watermark across the form */}
+      {/* Transparent Watermark across the form */}
       {determinedWatermark && (
         <div
           aria-hidden="true"
-          className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-20 overflow-hidden"
-          style={{ opacity: 0.3 }}
+          className="transmittal-watermark-container absolute inset-0 flex items-center justify-center pointer-events-none select-none z-20 overflow-hidden"
+          style={{ opacity: 0.22 }}
         >
           <span
-            className="text-black font-black tracking-[0.25em] whitespace-nowrap text-3xl sm:text-4xl md:text-5xl uppercase transform -rotate-18 print:text-black"
-            style={{ letterSpacing: '0.22em' }}
+            className="transmittal-watermark text-black font-black uppercase whitespace-nowrap text-4xl sm:text-5xl md:text-6xl transform -rotate-15 select-none print:text-black"
+            style={{ letterSpacing: '0.32em' }}
           >
             {determinedWatermark}
           </span>

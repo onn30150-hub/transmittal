@@ -397,6 +397,19 @@ export default function App() {
             margin: 0 !important;
             padding: 0 !important;
           }
+          .transmittal-watermark-container {
+            opacity: 0.20 !important;
+            display: flex !important;
+          }
+          .transmittal-watermark {
+            font-size: 46pt !important;
+            letter-spacing: 0.32em !important;
+            font-weight: 900 !important;
+            color: #000000 !important;
+            transform: rotate(-15deg) !important;
+            white-space: nowrap !important;
+            line-height: 1 !important;
+          }
         }
       `}</style>
 
