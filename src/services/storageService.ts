@@ -522,7 +522,40 @@ export const StorageService = {
     return updatedForm;
   },
 
-  async deleteTransmittal(id: string): Promise<void> {
+  // Soft delete: moves transmittal to the Recycle Bin
+  async softDeleteTransmittal(id: string, deletedBy?: string): Promise<TransmittalForm | null> {
+    const existing = await this.getTransmittal(id);
+    if (!existing) return null;
+
+    const updated: TransmittalForm = {
+      ...existing,
+      isDeleted: true,
+      deletedAt: new Date().toISOString(),
+      deletedBy: deletedBy || auth.currentUser?.email || undefined
+    };
+
+    return this.saveTransmittal(updated, { autoResolveDuplicate: true });
+  },
+
+  // Restore: moves transmittal back from the Recycle Bin to active list
+  async restoreTransmittal(id: string, newNumber?: string): Promise<TransmittalForm | null> {
+    const existing = await this.getTransmittal(id);
+    if (!existing) return null;
+
+    const updated: TransmittalForm = {
+      ...existing,
+      formNumber: newNumber ? newNumber.trim().toUpperCase() : existing.formNumber,
+      isDeleted: false,
+      deletedAt: undefined,
+      deletedBy: undefined,
+      updatedAt: new Date().toISOString()
+    };
+
+    return this.saveTransmittal(updated, { autoResolveDuplicate: true });
+  },
+
+  // Permanent Delete: removes completely from Firestore, LocalStorage, and IndexedDB
+  async permanentlyDeleteTransmittal(id: string): Promise<void> {
     // 1. Delete from shared Firebase Firestore
     try {
       await deleteDoc(doc(db, 'transmittals', id));
@@ -549,6 +582,34 @@ export const StorageService = {
     }
 
     notifySubscribers();
+  },
+
+  // Default delete is now soft-delete (moves to Recycle Bin)
+  async deleteTransmittal(id: string): Promise<void> {
+    await this.softDeleteTransmittal(id);
+  },
+
+  // Empty the entire Recycle Bin permanently
+  async emptyRecycleBin(): Promise<void> {
+    const all = await this.getTransmittals();
+    const deleted = all.filter((f) => Boolean(f.isDeleted));
+    for (const form of deleted) {
+      await this.permanentlyDeleteTransmittal(form.id);
+    }
+  },
+
+  // Batch restore multiple transmittals
+  async restoreMultipleTransmittals(ids: string[]): Promise<void> {
+    for (const id of ids) {
+      await this.restoreTransmittal(id);
+    }
+  },
+
+  // Batch permanently delete multiple transmittals
+  async permanentlyDeleteMultiple(ids: string[]): Promise<void> {
+    for (const id of ids) {
+      await this.permanentlyDeleteTransmittal(id);
+    }
   },
 
   async getSettings(): Promise<TransmittalSettings> {

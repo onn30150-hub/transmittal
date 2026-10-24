@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   Clock,
   MapPin,
+  Building,
   FileText,
   Plus,
   ArrowRight,
@@ -219,10 +220,10 @@ export const TransmittalList: React.FC<Props> = ({
                       <span>{formattedDate}</span>
                     </div>
 
-                    <div className="flex items-center gap-1.5 text-slate-600 pt-0.5">
-                      <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <span className="truncate font-medium text-[11px]">
-                        {form.dropTo || form.receivedByName || 'Head Office'}
+                    <div className="flex items-center gap-1.5 text-slate-700 pt-0.5" title="Branch / Destination">
+                      <Building className="w-3.5 h-3.5 text-red-600 shrink-0" />
+                      <span className="truncate font-semibold text-[11px] uppercase tracking-wide text-slate-800">
+                        {form.branchName || form.dropTo || form.receivedByName || 'Branch Destination'}
                       </span>
                     </div>
                   </div>
@@ -292,12 +293,12 @@ export const TransmittalList: React.FC<Props> = ({
                     <Edit className="w-4 h-4" />
                   </button>
 
-                  {/* Delete */}
+                  {/* Move to Recycle Bin */}
                   <button
                     type="button"
                     onClick={() => onDelete(form.id)}
                     className="p-1.5 border border-slate-200 hover:border-red-200 hover:bg-red-50 text-slate-400 hover:text-red-600 rounded-lg transition-colors cursor-pointer"
-                    title="Delete transmittal"
+                    title="Move to Recycle Bin"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -483,7 +484,7 @@ export const TransmittalList: React.FC<Props> = ({
                           <button
                             onClick={() => onDelete(form.id)}
                             className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
-                            title="Delete"
+                            title="Move to Recycle Bin"
                           >
                             <Trash2 className="w-4 h-4" />
                           </button>

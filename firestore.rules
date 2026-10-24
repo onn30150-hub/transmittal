@@ -39,7 +39,10 @@ service cloud.firestore {
         && (!('branchName' in data) || (data.branchName is string && data.branchName.size() <= 128))
         && (!('authorId' in data) || (data.authorId is string && data.authorId.size() <= 128))
         && (!('authorEmail' in data) || (data.authorEmail is string && data.authorEmail.size() <= 128))
-        && (!('hardCopyUrl' in data) || (data.hardCopyUrl is string && data.hardCopyUrl.size() <= 500000));
+        && (!('hardCopyUrl' in data) || (data.hardCopyUrl is string && data.hardCopyUrl.size() <= 500000))
+        && (!('isDeleted' in data) || data.isDeleted is bool)
+        && (!('deletedAt' in data) || (data.deletedAt is string && data.deletedAt.size() <= 64))
+        && (!('deletedBy' in data) || (data.deletedBy is string && data.deletedBy.size() <= 128));
     }
 
     // 4. Entity Validation Helper for Settings

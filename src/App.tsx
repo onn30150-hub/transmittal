@@ -15,6 +15,7 @@ import { TransmittalPrintModal } from './components/TransmittalPrintModal';
 import { HardCopyModal } from './components/HardCopyModal';
 import { SettingsModal } from './components/SettingsModal';
 import { TransmittalDocument } from './components/TransmittalDocument';
+import { RecycleBinView } from './components/RecycleBinView';
 import { Plus, Printer, RefreshCw, Scissors, FileText } from 'lucide-react';
 
 export default function App() {
@@ -34,6 +35,7 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('cards');
+  const [viewTab, setViewTab] = useState<'active' | 'recycle_bin'>('active');
 
   const [filters, setFilters] = useState<FilterOptions>({
     searchQuery: '',
@@ -43,6 +45,11 @@ export default function App() {
     dateTo: '',
     purpose: ''
   });
+
+  // Active vs Soft-deleted forms separation
+  const activeForms = useMemo(() => forms.filter((f) => !f.isDeleted), [forms]);
+  const deletedForms = useMemo(() => forms.filter((f) => Boolean(f.isDeleted)), [forms]);
+  const deletedCount = deletedForms.length;
 
   // Modals state
   const [isEditorOpen, setIsEditorOpen] = useState(false);
@@ -75,8 +82,9 @@ export default function App() {
       ]);
       setForms(loadedForms);
       setSettings(loadedSettings);
-      if (loadedForms.length > 0 && !activePrintForm) {
-        setActivePrintForm(loadedForms[0]);
+      const firstActive = loadedForms.find((f) => !f.isDeleted);
+      if (firstActive && !activePrintForm) {
+        setActivePrintForm(firstActive);
       }
     } catch (err) {
       console.error('Failed to load storage data:', err);
@@ -94,20 +102,21 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  // Filtered forms calculation (guaranteed sorted from newer to older)
+  // Filtered active forms calculation (guaranteed sorted from newer to older)
   const filteredForms = useMemo(() => {
-    const list = forms.filter((f) => {
-      // Search query (form number, recipient, purpose, dropTo, items)
+    const list = activeForms.filter((f) => {
+      // Search query (form number, recipient, purpose, branch, dropTo, items)
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase().trim();
         const matchNumber = f.formNumber.toLowerCase().includes(q);
         const matchPurpose = f.purpose.toLowerCase().includes(q);
+        const matchBranch = (f.branchName || '').toLowerCase().includes(q);
         const matchDrop = (f.dropTo || '').toLowerCase().includes(q);
         const matchRecipient = (f.receivedByName || '').toLowerCase().includes(q);
         const matchFrom = (f.fromName || '').toLowerCase().includes(q);
         const matchItem = f.items.some((it) => it.description.toLowerCase().includes(q));
 
-        if (!matchNumber && !matchPurpose && !matchDrop && !matchRecipient && !matchFrom && !matchItem) {
+        if (!matchNumber && !matchPurpose && !matchBranch && !matchDrop && !matchRecipient && !matchFrom && !matchItem) {
           return false;
         }
       }
@@ -125,7 +134,7 @@ export default function App() {
     });
 
     return [...list].sort(compareTransmittalsNewestFirst);
-  }, [forms, searchQuery, filters]);
+  }, [activeForms, searchQuery, filters]);
 
   // Handlers
   const handleNewTransmittal = () => {
@@ -190,9 +199,12 @@ export default function App() {
     setIsEditorOpen(true);
   };
 
+  // Soft delete: moves transmittal to the Recycle Bin
   const handleDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this transmittal record?')) {
-      await StorageService.deleteTransmittal(id);
+    const target = forms.find((f) => f.id === id);
+    if (!target) return;
+    if (window.confirm(`Move transmittal #${target.formNumber} to the Recycle Bin?`)) {
+      await StorageService.softDeleteTransmittal(id);
       setSelectedIds((prev) => prev.filter((i) => i !== id));
       const updated = await StorageService.getTransmittals();
       setForms(updated);
@@ -201,19 +213,47 @@ export default function App() {
 
   const handleBulkDelete = async () => {
     if (selectedIds.length === 0) return;
-    const confirmMsg =
-      selectedIds.length === forms.length
-        ? `Are you sure you want to delete ALL ${selectedIds.length} transmittal records? This action cannot be undone.`
-        : `Are you sure you want to delete the ${selectedIds.length} selected transmittal records?`;
-
-    if (window.confirm(confirmMsg)) {
+    if (window.confirm(`Move ${selectedIds.length} selected transmittal records to the Recycle Bin?`)) {
       for (const id of selectedIds) {
-        await StorageService.deleteTransmittal(id);
+        await StorageService.softDeleteTransmittal(id);
       }
       setSelectedIds([]);
       const updated = await StorageService.getTransmittals();
       setForms(updated);
     }
+  };
+
+  // Recycle Bin Actions
+  const handleRestore = async (form: TransmittalForm, newNumber?: string) => {
+    await StorageService.restoreTransmittal(form.id, newNumber);
+    const updated = await StorageService.getTransmittals();
+    setForms(updated);
+  };
+
+  const handlePermanentlyDelete = async (id: string) => {
+    await StorageService.permanentlyDeleteTransmittal(id);
+    const updated = await StorageService.getTransmittals();
+    setForms(updated);
+  };
+
+  const handleEmptyRecycleBin = async () => {
+    await StorageService.emptyRecycleBin();
+    const updated = await StorageService.getTransmittals();
+    setForms(updated);
+  };
+
+  const handleBulkRestore = async (formsToRestore: { form: TransmittalForm; newNumber?: string }[]) => {
+    for (const item of formsToRestore) {
+      await StorageService.restoreTransmittal(item.form.id, item.newNumber);
+    }
+    const updated = await StorageService.getTransmittals();
+    setForms(updated);
+  };
+
+  const handleBulkPermanentDelete = async (ids: string[]) => {
+    await StorageService.permanentlyDeleteMultiple(ids);
+    const updated = await StorageService.getTransmittals();
+    setForms(updated);
   };
 
   const handleToggleStatus = async (form: TransmittalForm) => {
@@ -271,6 +311,9 @@ export default function App() {
         onSearchChange={setSearchQuery}
         viewMode={viewMode}
         onViewModeChange={setViewMode}
+        viewTab={viewTab}
+        onViewTabChange={setViewTab}
+        deletedCount={deletedCount}
       />
 
       {/* Main Workspace Area */}
@@ -280,13 +323,27 @@ export default function App() {
           forms={forms}
           filters={filters}
           onFilterChange={setFilters}
+          deletedCount={deletedCount}
+          viewTab={viewTab}
+          onViewTabChange={setViewTab}
         />
 
         {/* Divider Separation Line */}
         <div className="border-t border-slate-200/80" />
 
-        {/* List of Transmittals */}
-        {isLoading ? (
+        {/* Workspace Views: Active Transmittals vs Recycle Bin */}
+        {viewTab === 'recycle_bin' ? (
+          <RecycleBinView
+            deletedForms={deletedForms}
+            activeForms={activeForms}
+            onBackToActive={() => setViewTab('active')}
+            onRestore={handleRestore}
+            onPermanentlyDelete={handlePermanentlyDelete}
+            onEmptyRecycleBin={handleEmptyRecycleBin}
+            onBulkRestore={handleBulkRestore}
+            onBulkPermanentDelete={handleBulkPermanentDelete}
+          />
+        ) : isLoading ? (
           <div className="p-16 flex flex-col items-center justify-center text-slate-400 gap-3">
             <RefreshCw className="w-7 h-7 animate-spin text-red-600" />
             <p className="text-xs font-medium text-slate-500">Loading transmittal records...</p>

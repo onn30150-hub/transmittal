@@ -35,7 +35,10 @@
         "authorId": { "type": "string", "maxLength": 128 },
         "authorEmail": { "type": "string", "maxLength": 128 },
         "createdAt": { "type": "string", "maxLength": 64 },
-        "updatedAt": { "type": "string", "maxLength": 64 }
+        "updatedAt": { "type": "string", "maxLength": 64 },
+        "isDeleted": { "type": "boolean" },
+        "deletedAt": { "type": "string", "maxLength": 64 },
+        "deletedBy": { "type": "string", "maxLength": 128 }
       },
       "required": ["id", "formNumber", "date", "purpose", "items", "fromName", "fromType"]
     },

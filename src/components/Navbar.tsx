@@ -8,7 +8,8 @@ import {
   X,
   LayoutGrid,
   List,
-  Layers
+  Layers,
+  Trash2
 } from 'lucide-react';
 
 interface Props {
@@ -20,6 +21,9 @@ interface Props {
   onSearchChange: (q: string) => void;
   viewMode: 'table' | 'cards';
   onViewModeChange: (mode: 'table' | 'cards') => void;
+  viewTab?: 'active' | 'recycle_bin';
+  onViewTabChange?: (tab: 'active' | 'recycle_bin') => void;
+  deletedCount?: number;
 }
 
 export const Navbar: React.FC<Props> = ({
@@ -30,7 +34,10 @@ export const Navbar: React.FC<Props> = ({
   searchQuery,
   onSearchChange,
   viewMode,
-  onViewModeChange
+  onViewModeChange,
+  viewTab = 'active',
+  onViewTabChange,
+  deletedCount = 0
 }) => {
   return (
     <header className="bg-white text-slate-800 border-b border-slate-200/80 sticky top-0 z-30 shadow-xs no-print">
@@ -140,6 +147,32 @@ export const Navbar: React.FC<Props> = ({
               >
                 <Layers className="w-3.5 h-3.5 text-red-600" />
                 <span className="hidden md:inline">Templates</span>
+              </button>
+            )}
+
+            {/* Recycle Bin Button */}
+            {onViewTabChange && (
+              <button
+                type="button"
+                onClick={() => onViewTabChange(viewTab === 'recycle_bin' ? 'active' : 'recycle_bin')}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-semibold rounded-xl transition-all cursor-pointer border shadow-2xs ${
+                  viewTab === 'recycle_bin'
+                    ? 'bg-rose-50 text-rose-700 border-rose-300 ring-2 ring-rose-500/20'
+                    : 'text-slate-600 hover:text-slate-900 bg-slate-50 hover:bg-slate-100 border-slate-200'
+                }`}
+                title={viewTab === 'recycle_bin' ? 'Return to Active Transmittals' : 'Open Recycle Bin'}
+              >
+                <Trash2 className={`w-3.5 h-3.5 ${viewTab === 'recycle_bin' ? 'text-rose-600' : 'text-slate-500'}`} />
+                <span className="hidden md:inline">Recycle Bin</span>
+                {deletedCount > 0 && (
+                  <span className={`px-1.5 py-0.2 text-[10px] font-bold rounded-full ${
+                    viewTab === 'recycle_bin'
+                      ? 'bg-rose-600 text-white'
+                      : 'bg-slate-200 text-slate-700'
+                  }`}>
+                    {deletedCount}
+                  </span>
+                )}
               </button>
             )}
 

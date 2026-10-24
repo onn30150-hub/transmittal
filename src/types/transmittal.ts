@@ -45,6 +45,9 @@ export interface TransmittalForm {
   hardCopyUrl?: string;             // Scanned signed document attachment URL
   authorId?: string;
   authorEmail?: string;
+  isDeleted?: boolean;              // Soft delete flag (Recycle Bin)
+  deletedAt?: string;               // ISO timestamp when moved to Recycle Bin
+  deletedBy?: string;               // User identifier who deleted
   createdAt: string;
   updatedAt?: string;
 }
@@ -77,11 +80,12 @@ export interface TransmittalSettings {
 
 export interface FilterOptions {
   searchQuery: string;
-  status: 'all' | 'pending' | 'completed' | 'has_hardcopy';
+  status: 'all' | 'pending' | 'completed' | 'has_hardcopy' | 'recycle_bin';
   locationType: 'all' | 'HO' | 'BR';
   dateFrom: string;
   dateTo: string;
   purpose: string;
+  viewTab?: 'active' | 'recycle_bin';
 }
 
 export type PrintMode = '2in1-copy' | '2pages-copy' | 'dual-copy' | 'full-page'; // 2in1 copy (single 8.5x13) vs 2pages copy (2 pages of 8.5x6.5)
