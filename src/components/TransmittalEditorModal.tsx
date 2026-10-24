@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   TransmittalForm,
   TransmittalSettings,
@@ -25,7 +25,8 @@ import {
   Layers,
   FileText,
   Settings,
-  RefreshCw
+  RefreshCw,
+  AlertCircle
 } from 'lucide-react';
 
 interface Props {
@@ -95,45 +96,100 @@ export const TransmittalEditorModal: React.FC<Props> = ({
 
   const [isSaving, setIsSaving] = useState(false);
   const [activeSignatoryTarget, setActiveSignatoryTarget] = useState<'from' | 'delivered' | 'noted' | 'received'>('from');
-  
   const [isCheckingNumber, setIsCheckingNumber] = useState(false);
+  const [numberUpdateNotice, setNumberUpdateNotice] = useState<string | null>(null);
+
+  // Track modal opening so we only initialize form ONCE upon open, never during background data sync
+  const wasOpenRef = useRef(false);
+  const initialFormIdRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (initialForm) {
-      setFormData({
-        ...initialForm,
-        date: initialForm.date ? initialForm.date.slice(0, 10) : new Date().toISOString().slice(0, 10),
-        items: initialForm.items?.length > 0 ? initialForm.items : [{ qty: 1, description: '' }]
-      });
-    } else {
-      // Create new: generate next Form Number
-      StorageService.generateNextFormNumber(settings.defaultFromType || 'HO').then((num) => {
-        setFormData({
-          id: 'trans-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
-          formNumber: num,
-          date: new Date().toISOString().slice(0, 10),
-          purpose: '',
-          remarks: 'Please check items and serial numbers upon receipt. Report any damage within 24 hours.',
-          dropTo: '',
-          items: [{ qty: 1, description: '' }],
-          fromName: settings.defaultFromName || 'MARK ANTHONY REYES',
-          fromDesignation: 'IT Systems / Logistics',
-          fromType: settings.defaultFromType || 'HO',
-          deliveredToName: '',
-          deliveredToDesignation: 'Courier / Messenger',
-          deliveredToType: 'BR',
-          notedByName: settings.defaultNotedByName || 'ENG. EDUARDO B. SANTOS',
-          notedByDesignation: 'Operations Head',
-          notedByType: settings.defaultNotedByType || 'HO',
-          receivedByName: '',
-          receivedByDesignation: 'Branch Staff / Custodian',
-          receivedByType: 'BR',
-          completeDelivery: false,
-          createdAt: new Date().toISOString()
-        });
-      });
+    if (!isOpen) {
+      wasOpenRef.current = false;
+      initialFormIdRef.current = null;
+      setNumberUpdateNotice(null);
+      return;
     }
-  }, [initialForm, settings, isOpen]);
+
+    const currentFormId = initialForm ? initialForm.id : null;
+    const isNewOpening = !wasOpenRef.current || (initialFormIdRef.current !== currentFormId);
+
+    if (isNewOpening) {
+      wasOpenRef.current = true;
+      initialFormIdRef.current = currentFormId;
+      setNumberUpdateNotice(null);
+
+      if (initialForm) {
+        setFormData({
+          ...initialForm,
+          date: initialForm.date ? initialForm.date.slice(0, 10) : new Date().toISOString().slice(0, 10),
+          items: initialForm.items?.length > 0 ? initialForm.items : [{ qty: 1, description: '' }]
+        });
+      } else {
+        // Create new: generate next Form Number
+        StorageService.generateNextFormNumber(settings.defaultFromType || 'HO').then((num) => {
+          setFormData({
+            id: 'trans-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7),
+            formNumber: num,
+            date: new Date().toISOString().slice(0, 10),
+            purpose: '',
+            remarks: 'Please check items and serial numbers upon receipt. Report any damage within 24 hours.',
+            dropTo: '',
+            items: [{ qty: 1, description: '' }],
+            fromName: settings.defaultFromName || 'MARK ANTHONY REYES',
+            fromDesignation: 'IT Systems / Logistics',
+            fromType: settings.defaultFromType || 'HO',
+            deliveredToName: '',
+            deliveredToDesignation: 'Courier / Messenger',
+            deliveredToType: 'BR',
+            notedByName: settings.defaultNotedByName || 'ENG. EDUARDO B. SANTOS',
+            notedByDesignation: 'Operations Head',
+            notedByType: settings.defaultNotedByType || 'HO',
+            receivedByName: '',
+            receivedByDesignation: 'Branch Staff / Custodian',
+            receivedByType: 'BR',
+            completeDelivery: false,
+            createdAt: new Date().toISOString()
+          });
+        });
+      }
+    }
+  }, [initialForm, isOpen]); // settings is deliberately omitted so background syncs never wipe user input
+
+  // Real-time conflict monitor for new transmittals:
+  // If another user saves first and claims the current formNumber,
+  // automatically update ONLY the formNumber to the next sequential number.
+  // ALL user-encoded data (purpose, branch, dropTo, items, remarks, signatories) remains 100% PRESERVED!
+  useEffect(() => {
+    if (!isOpen || isEditing) return;
+
+    const unsubscribe = StorageService.subscribe(async () => {
+      setFormData((current) => {
+        if (!current.formNumber) return current;
+
+        StorageService.checkFormNumberConflict(current.formNumber, current.id).then((conflict) => {
+          if (conflict.isConflict && conflict.suggestedNumber && conflict.suggestedNumber !== current.formNumber) {
+            const previousNum = current.formNumber;
+            setFormData((prev) => {
+              if (prev.formNumber === conflict.suggestedNumber) return prev;
+              // Preserve all entered fields, only update formNumber
+              return {
+                ...prev,
+                formNumber: conflict.suggestedNumber
+              };
+            });
+            setNumberUpdateNotice(
+              `Form # updated to ${conflict.suggestedNumber} (#${previousNum} was just saved by another user). Your encoded data is preserved!`
+            );
+          }
+        });
+
+        return current;
+      });
+    });
+
+    return () => unsubscribe();
+  }, [isOpen, isEditing]);
 
   if (!isOpen) return null;
 
@@ -235,7 +291,17 @@ export const TransmittalEditorModal: React.FC<Props> = ({
 
     try {
       setIsSaving(true);
-      await onSave({ ...formData, items: validItems }, andPrint);
+      const formToSave = { ...formData, items: validItems };
+      
+      // Auto-claim latest untaken number if creating a new form
+      if (!isEditing) {
+        const conflict = await StorageService.checkFormNumberConflict(formToSave.formNumber, formToSave.id);
+        if (conflict.isConflict && conflict.suggestedNumber) {
+          formToSave.formNumber = conflict.suggestedNumber;
+        }
+      }
+
+      await onSave(formToSave, andPrint);
       onClose();
     } catch (err: any) {
       console.error(err);
@@ -351,7 +417,19 @@ export const TransmittalEditorModal: React.FC<Props> = ({
                     required
                   />
                 </div>
-                {!isEditing && (
+                {numberUpdateNotice ? (
+                  <div className="mt-1.5 p-2 bg-amber-50 border border-amber-200 rounded-lg text-[11px] text-amber-900 flex items-start gap-1.5">
+                    <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                    <span className="flex-1 leading-tight font-medium">{numberUpdateNotice}</span>
+                    <button
+                      type="button"
+                      onClick={() => setNumberUpdateNotice(null)}
+                      className="text-amber-500 hover:text-amber-800 cursor-pointer"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </div>
+                ) : !isEditing && (
                   <p className="text-[10px] text-slate-500 mt-1 leading-tight">
                     Visual presentation: automatically increments on save if already taken.
                   </p>

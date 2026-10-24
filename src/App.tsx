@@ -245,7 +245,7 @@ export default function App() {
   };
 
   const handleSaveForm = async (savedForm: TransmittalForm, andPrint = false) => {
-    const persisted = await StorageService.saveTransmittal(savedForm, { disallowDuplicate: true });
+    const persisted = await StorageService.saveTransmittal(savedForm, { autoResolveDuplicate: true });
     const fresh = await StorageService.getTransmittals();
     setForms(fresh);
     if (andPrint) {
